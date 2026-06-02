@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.shezik.drawanywhere.UiState
 
@@ -26,6 +27,7 @@ fun DraggableToolbarCard(
 ) {
     Card(
         modifier = modifier
+            .testTag("toolbar_card")
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {

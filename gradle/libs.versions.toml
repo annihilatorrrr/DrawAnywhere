@@ -44,6 +44,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "compose" }
 androidx-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "compose" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesCore" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
 ui = { group = "androidx.compose.ui", name = "ui", version.ref = "compose" }
 androidx-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "compose" }

@@ -1,0 +1,116 @@
+package com.shezik.drawanywhere.controller
+
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import com.shezik.drawanywhere.model.DrawAction
+import com.shezik.drawanywhere.model.DrawObject
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.*
+import org.junit.Test
+
+class UndoRedoManagerTest {
+
+    private fun newStroke() = DrawObject.Stroke(
+        points = mutableStateListOf(Offset(0f, 0f)),
+        color = Color.Red, width = 5f, alpha = 1f
+    )
+
+    private fun addAction() = DrawAction.AddPath(newStroke())
+
+    @Test
+    fun initiallyCannotUndoOrRedo() = runTest {
+        val m = UndoRedoManager()
+        assertFalse(m.canUndo.first())
+        assertFalse(m.canRedo.first())
+    }
+
+    @Test
+    fun pushEnablesUndo() = runTest {
+        val m = UndoRedoManager()
+        m.push(addAction())
+        assertTrue(m.canUndo.first())
+        assertFalse(m.canRedo.first())
+    }
+
+    @Test
+    fun popUndoReturnsPushedAction() = runTest {
+        val m = UndoRedoManager()
+        val action = addAction()
+        m.push(action)
+        val popped = m.popUndo()
+        assertSame(action, popped)
+    }
+
+    @Test
+    fun popUndoDisablesUndoWhenEmpty() = runTest {
+        val m = UndoRedoManager()
+        m.push(addAction())
+        m.popUndo()
+        assertFalse(m.canUndo.first())
+    }
+
+    @Test
+    fun undoThenPushRedoEnablesRedo() = runTest {
+        val m = UndoRedoManager()
+        val action = addAction()
+        m.push(action)
+        val popped = m.popUndo()
+        m.pushRedo(popped!!)
+        assertTrue(m.canRedo.first())
+    }
+
+    @Test
+    fun popRedoReturnsPushedRedoAction() = runTest {
+        val m = UndoRedoManager()
+        val action = addAction()
+        m.push(action)
+        val popped = m.popUndo()
+        m.pushRedo(popped!!)
+        assertSame(popped, m.popRedo())
+    }
+
+    @Test
+    fun clearRedoRemovesRedoStack() = runTest {
+        val m = UndoRedoManager()
+        val action = addAction()
+        m.push(action)
+        val popped = m.popUndo()
+        m.pushRedo(popped!!)
+        assertTrue(m.canRedo.first())
+        m.clearRedo()
+        assertFalse(m.canRedo.first())
+    }
+
+    @Test
+    fun maxDepthTrimsOldestEntries() = runTest {
+        val m = UndoRedoManager(maxDepth = 3)
+        repeat(5) { m.push(addAction()) }
+
+        // Should only have 3 entries, popping all should work
+        repeat(3) { assertNotNull(m.popUndo()) }
+        assertNull(m.popUndo())  // 4th should be null
+        assertFalse(m.canUndo.first())
+    }
+
+    @Test
+    fun clearRedoIsCallersResponsibility() = runTest {
+        // UndoRedoManager.push() does NOT clear redo —
+        // that's the caller's (DrawController) job.
+        val m = UndoRedoManager()
+        val a1 = addAction()
+        m.push(a1)
+        val popped = m.popUndo()
+        m.pushRedo(popped!!)
+        assertTrue(m.canRedo.first())
+
+        // push alone doesn't clear redo
+        m.push(addAction())
+        assertTrue(m.canRedo.first())
+
+        // But clearRedo() does
+        m.clearRedo()
+        assertFalse(m.canRedo.first())
+    }
+}

@@ -73,3 +73,19 @@ fun pointsToPath(points: List<Offset>) = Path().apply {
     }
     lineTo(points.last().x, points.last().y)
 }
+
+fun pointsToAndroidPath(points: List<Offset>): android.graphics.Path {
+    val p = android.graphics.Path()
+    if (points.isEmpty()) return p
+    val first = points.first()
+    p.moveTo(first.x, first.y)
+    points.zipWithNext().forEachIndexed { index, (start, end) ->
+        val mx = (start.x + end.x) / 2f
+        val my = (start.y + end.y) / 2f
+        if (index == 0) p.lineTo(mx, my)
+        else p.quadTo(start.x, start.y, mx, my)
+    }
+    val last = points.last()
+    p.lineTo(last.x, last.y)
+    return p
+}

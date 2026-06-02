@@ -19,13 +19,11 @@ package com.shezik.drawanywhere.view.canvas
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Path
 import android.view.MotionEvent
 import android.view.View
 import androidx.compose.ui.graphics.toArgb
 import com.shezik.drawanywhere.DrawController
 import com.shezik.drawanywhere.DrawViewModel
-import com.shezik.drawanywhere.model.DrawObject
 import com.shezik.drawanywhere.model.StrokeModifier
 
 class NativeDrawCanvasView(
@@ -46,22 +44,17 @@ class NativeDrawCanvasView(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        // No background fill — overlay window is already TRANSLUCENT.
-
         for (stroke in drawController.strokeList) {
             if (stroke.points.isEmpty()) continue
-
-            val androidPath = buildAndroidPath(stroke.points)
             pathPaint.strokeWidth = stroke.width
 
             // Combine color's intrinsic alpha with stroke-level opacity.
-            // Paint.setAlpha() replaces (not multiplies) the alpha channel.
             val colorArgb = stroke.color.toArgb()
             val colorAlpha = stroke.color.alpha
             val combinedAlpha = (colorAlpha * stroke.alpha * 255).toInt().coerceIn(0, 255)
             pathPaint.color = (colorArgb and 0x00FFFFFF) or (combinedAlpha shl 24)
 
-            canvas.drawPath(androidPath, pathPaint)
+            canvas.drawPath(stroke.cachedAndroidPath, pathPaint)
         }
     }
 
@@ -114,23 +107,5 @@ class NativeDrawCanvasView(
             secondary -> StrokeModifier.SecondaryButton
             else -> StrokeModifier.None
         }
-    }
-
-    private fun buildAndroidPath(
-        points: List<androidx.compose.ui.geometry.Offset>
-    ): Path {
-        val p = Path()
-        if (points.isEmpty()) return p
-        val first = points.first()
-        p.moveTo(first.x, first.y)
-        points.zipWithNext().forEachIndexed { index, (start, end) ->
-            val mx = (start.x + end.x) / 2f
-            val my = (start.y + end.y) / 2f
-            if (index == 0) p.lineTo(mx, my)
-            else p.quadTo(start.x, start.y, mx, my)
-        }
-        val last = points.last()
-        p.lineTo(last.x, last.y)
-        return p
     }
 }

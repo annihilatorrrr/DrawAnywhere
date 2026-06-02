@@ -6,6 +6,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import com.shezik.drawanywhere.pointsToAndroidPath
 import com.shezik.drawanywhere.pointsToPath
 
 sealed class DrawObject {
@@ -25,6 +26,16 @@ sealed class DrawObject {
             else
                 _cachedPath.value!!
 
+        private var _cachedAndroidPath: android.graphics.Path? = null
+
+        /** Cached Android Path for native Canvas rendering. Rebuilt only on point changes. */
+        val cachedAndroidPath: android.graphics.Path get() {
+            if (_cachedAndroidPath == null || _cachedPathInvalid.value) {
+                _cachedAndroidPath = pointsToAndroidPath(points)
+            }
+            return _cachedAndroidPath!!
+        }
+
         private fun rebuildPath(): Path {
             _cachedPath.value = pointsToPath(points)
             _cachedPathInvalid.value = false
@@ -37,6 +48,7 @@ sealed class DrawObject {
 
         fun releasePath(): Stroke {
             _cachedPath.value = null
+            _cachedAndroidPath = null
             invalidatePath()
             return this
         }

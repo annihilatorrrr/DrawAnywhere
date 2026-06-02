@@ -15,6 +15,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DrawAnywhere">
 
+        <activity
+            android:name="androidx.activity.ComponentActivity"
+            android:exported="false" />
+
         <service
             android:name=".DrawAnywhereTileService"
             android:label="DrawAnywhere"

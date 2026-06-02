@@ -183,37 +183,18 @@ class DrawViewModel(
         _uiState.update { it.copy(canvasPassthrough = passthrough, secondDrawerPinnedButtons = newPinned) }
     }
 
-    fun setPenColor(color: Color) =
-        _uiState.update {
-            with(it) {
-                val newConfigs = penConfigs.toMutableMap()
-                val newConfig = newConfigs[currentPenType]?.copy(color = color)
-                    ?: PenConfig(color = color, penType = currentPenType)
-                newConfigs[currentPenType] = newConfig
-                copy(penConfigs = newConfigs)
-            }
-        }
+    fun setPenColor(color: Color) = updateCurrentPenConfig { copy(color = color) }
 
-    fun setStrokeWidth(width: Float) =
-        _uiState.update {
-            with(it) {
-                val newConfigs = penConfigs.toMutableMap()
-                val newConfig = newConfigs[currentPenType]?.copy(width = width)
-                    ?: PenConfig(width = width, penType = currentPenType)
-                newConfigs[currentPenType] = newConfig
-                copy(penConfigs = newConfigs)
-            }
-        }
+    fun setStrokeWidth(width: Float) = updateCurrentPenConfig { copy(width = width) }
 
-    fun setStrokeAlpha(alpha: Float) =
-        _uiState.update {
-            with(it) {
-                val newConfigs = penConfigs.toMutableMap()
-                val newConfig = newConfigs[currentPenType]?.copy(alpha = alpha)
-                    ?: PenConfig(alpha = alpha, penType = currentPenType)
-                newConfigs[currentPenType] = newConfig
-                copy(penConfigs = newConfigs)
-            }
+    fun setStrokeAlpha(alpha: Float) = updateCurrentPenConfig { copy(alpha = alpha) }
+
+    private fun updateCurrentPenConfig(transform: PenConfig.() -> PenConfig) =
+        _uiState.update { state ->
+            val configs = state.penConfigs.toMutableMap()
+            val current = configs[state.currentPenType] ?: PenConfig(penType = state.currentPenType)
+            configs[state.currentPenType] = current.transform()
+            state.copy(penConfigs = configs)
         }
 
     fun setToolbarPosition(position: Offset) =

@@ -119,64 +119,49 @@ fun ToolbarButtonsContainer(
         (secondDrawerPinnedButtons.isNotEmpty() || (isSecondDrawerOpen && secondDrawerButtonIds.isNotEmpty()))
     val isExpandButtonVisible = isFirstDrawerOpen && secondDrawerButtonIds.isNotEmpty()
 
-    when (orientation) {
-        ToolbarOrientation.HORIZONTAL -> {
-            Row(modifier = modifier.then(animMod), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = arrangement) {
-                standaloneButtonIds.forEach { id -> allButtonsMap[id]?.let { RenderButton(it, popupAlignment) } }
-                firstDrawerButtonIds.forEach { id ->
-                    allButtonsMap[id]?.let { btn ->
-                        AnimatedVisibility(isFirstDrawerOpen,
-                            enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.5f),
-                            exit = fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.5f)
-                        ) { RenderButton(btn, popupAlignment) }
-                    }
-                }
-                AnimatedVisibility(isDividerVisible, enter = fadeIn(tween(300)), exit = fadeOut(tween(300))) {
-                    VerticalDivider(Modifier.height(24.dp).padding(horizontal = 8.dp), thickness = 2.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
-                }
-                secondDrawerButtonIds.forEach { id ->
-                    allButtonsMap[id]?.let { btn ->
-                        val vis = isFirstDrawerOpen && (isSecondDrawerOpen || id in secondDrawerPinnedButtons)
-                        AnimatedVisibility(vis,
-                            enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.5f),
-                            exit = fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.5f)
-                        ) { RenderButton(btn, popupAlignment) }
-                    }
-                }
-                AnimatedVisibility(isExpandButtonVisible,
+    val isHorizontal = orientation == ToolbarOrientation.HORIZONTAL
+
+    @Composable
+    fun ToolbarContent() {
+        standaloneButtonIds.forEach { id -> allButtonsMap[id]?.let { RenderButton(it, popupAlignment) } }
+        firstDrawerButtonIds.forEach { id ->
+            allButtonsMap[id]?.let { btn ->
+                AnimatedVisibility(isFirstDrawerOpen,
                     enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.5f),
                     exit = fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.5f)
-                ) { ToolbarExpandButton(Modifier, isSecondDrawerOpen, onExpandToggleClick, orientation) }
+                ) { RenderButton(btn, popupAlignment) }
             }
         }
-        ToolbarOrientation.VERTICAL -> {
-            Column(modifier = modifier.then(animMod), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = arrangement) {
-                standaloneButtonIds.forEach { id -> allButtonsMap[id]?.let { RenderButton(it, popupAlignment) } }
-                firstDrawerButtonIds.forEach { id ->
-                    allButtonsMap[id]?.let { btn ->
-                        AnimatedVisibility(isFirstDrawerOpen,
-                            enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.5f),
-                            exit = fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.5f)
-                        ) { RenderButton(btn, popupAlignment) }
-                    }
-                }
-                AnimatedVisibility(isDividerVisible, enter = fadeIn(tween(300)), exit = fadeOut(tween(300))) {
-                    HorizontalDivider(Modifier.width(24.dp).padding(vertical = 8.dp), thickness = 2.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
-                }
-                secondDrawerButtonIds.forEach { id ->
-                    allButtonsMap[id]?.let { btn ->
-                        val vis = isFirstDrawerOpen && (isSecondDrawerOpen || id in secondDrawerPinnedButtons)
-                        AnimatedVisibility(vis,
-                            enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.5f),
-                            exit = fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.5f)
-                        ) { RenderButton(btn, popupAlignment) }
-                    }
-                }
-                AnimatedVisibility(isExpandButtonVisible,
+        AnimatedVisibility(isDividerVisible, enter = fadeIn(tween(300)), exit = fadeOut(tween(300))) {
+            if (isHorizontal) VerticalDivider(
+                Modifier.height(24.dp).padding(horizontal = 8.dp), thickness = 2.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+            else HorizontalDivider(
+                Modifier.width(24.dp).padding(vertical = 8.dp), thickness = 2.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+        }
+        secondDrawerButtonIds.forEach { id ->
+            allButtonsMap[id]?.let { btn ->
+                val visible = isFirstDrawerOpen && (isSecondDrawerOpen || id in secondDrawerPinnedButtons)
+                AnimatedVisibility(visible,
                     enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.5f),
                     exit = fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.5f)
-                ) { ToolbarExpandButton(Modifier, isSecondDrawerOpen, onExpandToggleClick, orientation) }
+                ) { RenderButton(btn, popupAlignment) }
             }
+        }
+        AnimatedVisibility(isExpandButtonVisible,
+            enter = fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.5f),
+            exit = fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.5f)
+        ) { ToolbarExpandButton(Modifier, isSecondDrawerOpen, onExpandToggleClick, orientation) }
+    }
+
+    if (isHorizontal) {
+        Row(modifier = modifier.then(animMod), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = arrangement) {
+            ToolbarContent()
+        }
+    } else {
+        Column(modifier = modifier.then(animMod), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = arrangement) {
+            ToolbarContent()
         }
     }
 }

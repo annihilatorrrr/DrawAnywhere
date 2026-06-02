@@ -8,6 +8,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import com.shezik.drawanywhere.pointsToPath
 
+data class ObjectTransform(
+    val scaleX: Float = 1f,
+    val scaleY: Float = 1f,
+    val rotation: Float = 0f,
+    val offsetX: Float = 0f,
+    val offsetY: Float = 0f,
+)
+
 sealed class DrawObject {
     data class Stroke(
         val points: SnapshotStateList<Offset>,

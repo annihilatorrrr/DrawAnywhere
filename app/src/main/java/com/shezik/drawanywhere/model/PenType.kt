@@ -1,15 +1,6 @@
 package com.shezik.drawanywhere.model
 
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-
-data class ObjectTransform(
-    val scaleX: Float = 1f,
-    val scaleY: Float = 1f,
-    val rotation: Float = 0f,
-    val offsetX: Float = 0f,
-    val offsetY: Float = 0f,
-)
 
 enum class PenType {
     Pen, StrokeEraser

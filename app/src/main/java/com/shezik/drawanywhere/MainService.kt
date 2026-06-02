@@ -96,6 +96,7 @@ class MainService : Service() {
                     LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         )
+        applyCanvasPassthrough(canvasParams, initialUiState.canvasPassthrough)
 
         // -------- Setup toolbar (Compose) --------
         toolbarLifecycleOwner.start()
@@ -129,7 +130,8 @@ class MainService : Service() {
         // Observe UI state changes
         serviceScope.launch {
             viewModel.uiState.collect { state ->
-                canvasView.isPassthrough = state.canvasPassthrough
+                applyCanvasPassthrough(canvasParams, state.canvasPassthrough)
+                windowManager.updateViewLayout(canvasView, canvasParams)
                 canvasView.visibility = if (state.canvasVisible) View.VISIBLE else View.GONE
             }
         }
@@ -147,6 +149,13 @@ class MainService : Service() {
                     .start()
             }
         }
+    }
+
+    private fun applyCanvasPassthrough(params: LayoutParams, passthrough: Boolean) {
+        params.flags = if (passthrough)
+            params.flags or LayoutParams.FLAG_NOT_TOUCHABLE
+        else
+            params.flags and LayoutParams.FLAG_NOT_TOUCHABLE.inv()
     }
 
     private fun applyToolbarPosition(params: LayoutParams, state: ServiceState) {

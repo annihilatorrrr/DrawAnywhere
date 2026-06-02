@@ -34,8 +34,6 @@ class NativeDrawCanvasView(
     private val viewModel: DrawViewModel,
 ) : View(context) {
 
-    var isPassthrough: Boolean = false
-
     private var activePointerId: Int = -1
     private var strokeInProgress: Boolean = false
 
@@ -68,7 +66,6 @@ class NativeDrawCanvasView(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (isPassthrough) return false
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {

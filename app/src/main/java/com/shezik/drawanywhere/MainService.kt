@@ -96,7 +96,6 @@ class MainService : Service() {
                     LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         )
-        applyCanvasPassthrough(canvasParams, initialUiState.canvasPassthrough)
 
         // -------- Setup toolbar (Compose) --------
         toolbarLifecycleOwner.start()
@@ -130,8 +129,6 @@ class MainService : Service() {
         // Observe UI state changes
         serviceScope.launch {
             viewModel.uiState.collect { state ->
-                applyCanvasPassthrough(canvasParams, state.canvasPassthrough)
-                windowManager.updateViewLayout(canvasView, canvasParams)
                 canvasView.isPassthrough = state.canvasPassthrough
                 canvasView.visibility = if (state.canvasVisible) View.VISIBLE else View.GONE
             }
@@ -152,21 +149,13 @@ class MainService : Service() {
         }
     }
 
-    private fun applyCanvasPassthrough(params: LayoutParams, passthrough: Boolean) {
-        params.flags = if (passthrough)
-            params.flags or LayoutParams.FLAG_NOT_TOUCHABLE
-        else
-            params.flags and LayoutParams.FLAG_NOT_TOUCHABLE.inv()
-    }
-
     private fun applyToolbarPosition(params: LayoutParams, state: ServiceState) {
         val rounded = state.toolbarPosition.round()
         val (screenWidth, screenHeight) = getUsableScreenSize(windowManager)
         params.x = rounded.x.coerceIn(0, screenWidth - toolbarView.width)
         params.y = rounded.y.coerceIn(0, screenHeight - toolbarView.height)
         viewModel.setToolbarPosition(
-            Offset(params.x.toFloat(), params.y.toFloat()),
-            validated = true
+            Offset(params.x.toFloat(), params.y.toFloat())
         )
     }
 

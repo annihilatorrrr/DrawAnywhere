@@ -38,7 +38,6 @@ import kotlinx.coroutines.launch
 
 data class ServiceState(
     val toolbarPosition: Offset = Offset(32f, 64f),
-    val positionValidated: Boolean = false,
     val toolbarActive: Boolean = true
 )
 
@@ -217,8 +216,8 @@ class DrawViewModel(
             }
         }
 
-    fun setToolbarPosition(position: Offset, validated: Boolean = false) =
-        _serviceState.update { it.copy(toolbarPosition = position, positionValidated = validated) }
+    fun setToolbarPosition(position: Offset) =
+        _serviceState.update { it.copy(toolbarPosition = position) }
 
     fun updateToolbarPosition(offset: Offset) =
         setToolbarPosition(serviceState.value.toolbarPosition + offset)

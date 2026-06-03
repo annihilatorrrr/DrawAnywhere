@@ -90,7 +90,6 @@ class DrawViewModel(
     val canClearCanvas: StateFlow<Boolean> = controller.canClearPaths
 
     init {
-        controller.setPenConfig(initialUiState.currentPenConfig)
 
         _uiState
             .debounce(300)

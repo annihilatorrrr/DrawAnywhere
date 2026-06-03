@@ -28,7 +28,7 @@ class DrawToolbarInstrumentedTest {
         toolbarOrientation: ToolbarOrientation = ToolbarOrientation.HORIZONTAL,
         currentPenType: PenType = PenType.Pen,
     ): DrawViewModel {
-        val controller = DrawController().apply { setPenConfig(PenConfig()) }
+        val controller = DrawController(PenConfig())
         val prefs = PreferencesManager(appContext)
         return DrawViewModel(
             controller = controller,

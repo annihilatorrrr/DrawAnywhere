@@ -25,7 +25,6 @@ import android.view.View
 import androidx.compose.ui.graphics.toArgb
 import com.shezik.drawanywhere.DrawController
 import com.shezik.drawanywhere.DrawViewModel
-import com.shezik.drawanywhere.model.DrawObject
 import com.shezik.drawanywhere.model.StrokeModifier
 
 class NativeDrawCanvasView(

@@ -1,6 +1,5 @@
 package com.shezik.drawanywhere.controller
 
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.shezik.drawanywhere.model.DrawAction
@@ -13,7 +12,7 @@ import org.junit.Test
 class UndoRedoManagerTest {
 
     private fun newStroke() = DrawObject.Stroke(
-        points = mutableStateListOf(Offset(0f, 0f)),
+        points = mutableListOf(Offset(0f, 0f)),
         color = Color.Red, width = 5f, alpha = 1f
     )
 
@@ -72,14 +71,16 @@ class UndoRedoManagerTest {
     }
 
     @Test
-    fun clearRedoRemovesRedoStack() = runTest {
+    fun pushClearsRedo() = runTest {
         val m = UndoRedoManager()
         val action = addAction()
         m.push(action)
         val popped = m.popUndo()
         m.pushRedo(popped!!)
         assertTrue(m.canRedo.first())
-        m.clearRedo()
+
+        // New push should clear the redo stack
+        m.push(addAction())
         assertFalse(m.canRedo.first())
     }
 
@@ -88,29 +89,8 @@ class UndoRedoManagerTest {
         val m = UndoRedoManager(maxDepth = 3)
         repeat(5) { m.push(addAction()) }
 
-        // Should only have 3 entries, popping all should work
         repeat(3) { assertNotNull(m.popUndo()) }
-        assertNull(m.popUndo())  // 4th should be null
+        assertNull(m.popUndo())
         assertFalse(m.canUndo.first())
-    }
-
-    @Test
-    fun clearRedoIsCallersResponsibility() = runTest {
-        // UndoRedoManager.push() does NOT clear redo —
-        // that's the caller's (DrawController) job.
-        val m = UndoRedoManager()
-        val a1 = addAction()
-        m.push(a1)
-        val popped = m.popUndo()
-        m.pushRedo(popped!!)
-        assertTrue(m.canRedo.first())
-
-        // push alone doesn't clear redo
-        m.push(addAction())
-        assertTrue(m.canRedo.first())
-
-        // But clearRedo() does
-        m.clearRedo()
-        assertFalse(m.canRedo.first())
     }
 }

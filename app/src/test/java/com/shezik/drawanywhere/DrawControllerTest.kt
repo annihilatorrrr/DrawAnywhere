@@ -1,9 +1,7 @@
 package com.shezik.drawanywhere
 
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import com.shezik.drawanywhere.model.DrawAction
 import com.shezik.drawanywhere.model.DrawObject
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
@@ -14,38 +12,27 @@ import org.junit.Test
 
 class DrawControllerTest {
 
-    private fun newController() = DrawController().apply {
-        setPenConfig(PenConfig())
-    }
+    private fun newController() = DrawController(PenConfig())
 
     private fun newStroke() = DrawObject.Stroke(
-        points = mutableStateListOf(Offset(0f, 0f)),
+        points = mutableListOf(Offset(0f, 0f)),
         color = Color.Red,
         width = 5f,
         alpha = 1f
     )
 
     @Test
+    fun constructorSetsPenConfig() {
+        val c = DrawController(PenConfig(color = Color.Blue, width = 10f))
+        assertEquals(Color.Blue, c.penConfig.color)
+        assertEquals(10f, c.penConfig.width)
+    }
+
+    @Test
     fun createStrokeAddsToList() {
         val c = newController()
         c.createStroke(Offset(10f, 10f))
         assertEquals(1, c.strokeList.size)
-    }
-
-    @Test
-    fun createStrokeWithoutPenConfigThrows() {
-        val c = DrawController()
-        assertThrows(IllegalStateException::class.java) {
-            c.createStroke(Offset(10f, 10f))
-        }
-    }
-
-    @Test
-    fun updateLatestStrokeWithoutPenConfigThrows() {
-        val c = DrawController()
-        assertThrows(IllegalStateException::class.java) {
-            c.updateLatestStroke(Offset(10f, 10f))
-        }
     }
 
     @Test
@@ -68,10 +55,7 @@ class DrawControllerTest {
     @Test
     fun emptyStrokeRemovedOnFinish() {
         val c = newController()
-        // Create stroke with some points, then somehow make it empty...
-        // Actually, finishStroke() checks if the latest is empty
         c.createStroke(Offset(0f, 0f))
-        // Remove its points manually to simulate an edge case
         c.strokeList[0].points.clear()
         c.finishStroke()
         assertEquals(0, c.strokeList.size)
@@ -115,9 +99,7 @@ class DrawControllerTest {
         c.finishStroke()
         assertEquals(1, c.strokeList.size)
 
-        // Switch to eraser and erase
         c.setPenConfig(PenConfig(penType = PenType.StrokeEraser, width = 50f))
-        // Need the eraserRadius to hit — createPath triggers eraseStroke for PenType.StrokeEraser
         c.createStroke(Offset(0f, 0f))  // This calls eraseStroke
 
         assertEquals(0, c.strokeList.size)
@@ -144,34 +126,56 @@ class DrawControllerTest {
     @Test
     fun undoStackLimited() = runTest {
         val c = newController()
-        // create 60 strokes, finish all — should keep only last 50 undo steps
         repeat(60) {
             c.createStroke(Offset(it.toFloat(), 0f))
             c.updateLatestStroke(Offset(it.toFloat() + 1f, 1f))
             c.finishStroke()
         }
-        // undo 50+ times — after 50 it should stop (canUndo becomes false)
         repeat(50) { c.undo() }
-        assertFalse(c.canUndo.first())  // went through all undo entries
-        assertTrue(c.canRedo.first())   // redo stack should have items
+        assertFalse(c.canUndo.first())
+        assertTrue(c.canRedo.first())
     }
 
     @Test
     fun eraseStrokeRemovesTarget() {
         val c = newController()
-        c.setPenConfig(PenConfig(penType = PenType.StrokeEraser, width = 100f))
-        // Create a stroke first with pen
-        c.setPenConfig(PenConfig(penType = PenType.Pen, width = 5f))
+        // Create a 2-point stroke
         c.createStroke(Offset(0f, 0f))
         c.updateLatestStroke(Offset(100f, 100f))
         c.finishStroke()
 
         assertEquals(1, c.strokeList.size)
 
-        // Now erase
+        // Erase at midpoint — line-segment distance check
         c.setPenConfig(PenConfig(penType = PenType.StrokeEraser, width = 100f))
-        c.createStroke(Offset(50f, 50f))  // hits the stroke, should erase it
+        c.createStroke(Offset(50f, 50f))
         assertEquals(0, c.strokeList.size)
+    }
+
+    @Test
+    fun eraseStrokeRemovesSinglePointTarget() {
+        val c = newController()
+        // Create a single-point stroke (just a dot, no line segments)
+        c.createStroke(Offset(0f, 0f))
+        c.finishStroke()
+
+        assertEquals(1, c.strokeList.size)
+
+        // Erase close to the single point (direct distance check)
+        c.setPenConfig(PenConfig(penType = PenType.StrokeEraser, width = 100f))
+        c.createStroke(Offset(5f, 5f))  // distance ≈ 7, eraserRadius=50 → hit
+        assertEquals(0, c.strokeList.size)
+    }
+
+    @Test
+    fun eraseStrokeMissesDistantTarget() {
+        val c = newController()
+        c.createStroke(Offset(0f, 0f))
+        c.finishStroke()
+
+        c.setPenConfig(PenConfig(penType = PenType.StrokeEraser, width = 10f))
+        c.createStroke(Offset(100f, 100f))  // distance ≈ 141, eraserRadius=5 → miss
+        assertEquals(1, c.strokeList.size)  // stroke survives
     }
 
     @Test
@@ -206,5 +210,30 @@ class DrawControllerTest {
         c.onPathsChanged = { fired = true }
         c.undo()
         assertTrue(fired)
+    }
+
+    @Test
+    fun multipleRedoPreservesStack() = runTest {
+        val c = newController()
+        // Create 3 strokes
+        repeat(3) {
+            c.createStroke(Offset(it.toFloat(), 0f))
+            c.updateLatestStroke(Offset(it.toFloat() + 1f, 1f))
+            c.finishStroke()
+        }
+
+        // Undo all three
+        repeat(3) { c.undo() }
+        assertFalse(c.canUndo.first())
+        assertTrue(c.canRedo.first())
+
+        // Redo two — should still have one left on redo stack
+        repeat(2) { c.redo() }
+        assertTrue(c.canRedo.first())  // third redo still possible
+
+        // New action after partial redo clears remaining redo
+        c.createStroke(Offset(100f, 100f))
+        c.finishStroke()
+        assertFalse(c.canRedo.first())  // redo cleared by new action
     }
 }

@@ -19,7 +19,7 @@ class NativeDrawCanvasGestureTest {
     private val appContext get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     private fun setup(): Pair<DrawController, NativeDrawCanvasView> {
-        val controller = DrawController().apply { setPenConfig(PenConfig()) }
+        val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
             preferencesMgr = PreferencesManager(appContext),

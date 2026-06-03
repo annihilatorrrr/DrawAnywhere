@@ -23,7 +23,7 @@ class ToolbarGestureTest {
 
     @Test
     fun longPressDragRepositionsToolbar() {
-        val controller = DrawController().apply { setPenConfig(PenConfig()) }
+        val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
             preferencesMgr = PreferencesManager(appContext),
@@ -49,7 +49,7 @@ class ToolbarGestureTest {
 
     @Test
     fun toolbarRendersWithoutCrash() {
-        val controller = DrawController().apply { setPenConfig(PenConfig()) }
+        val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
             preferencesMgr = PreferencesManager(appContext),

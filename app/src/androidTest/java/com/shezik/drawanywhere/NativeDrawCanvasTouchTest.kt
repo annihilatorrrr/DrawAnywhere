@@ -18,7 +18,7 @@ class NativeDrawCanvasTouchTest {
 
     @Test
     fun downMoveUpCreatesStroke() {
-        val controller = DrawController().apply { setPenConfig(PenConfig()) }
+        val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
             preferencesMgr = PreferencesManager(appContext),
@@ -51,7 +51,7 @@ class NativeDrawCanvasTouchTest {
 
     @Test
     fun multipleStrokesWork() {
-        val controller = DrawController().apply { setPenConfig(PenConfig()) }
+        val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
             preferencesMgr = PreferencesManager(appContext),
@@ -76,7 +76,7 @@ class NativeDrawCanvasTouchTest {
 
     @Test
     fun cancellingStrokeStillFinishesStroke() {
-        val controller = DrawController().apply { setPenConfig(PenConfig()) }
+        val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
             preferencesMgr = PreferencesManager(appContext),

@@ -3,6 +3,7 @@ package com.shezik.drawanywhere
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.test.platform.app.InstrumentationRegistry
+import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import com.shezik.drawanywhere.model.StrokeModifier
 import com.shezik.drawanywhere.view.toolbar.ToolbarOrientation
@@ -23,7 +24,7 @@ class DrawViewModelE2ETest {
         canvasVisible: Boolean = true,
         currentPenType: PenType = PenType.Pen,
     ): DrawViewModel {
-        val controller = DrawController()
+        val controller = DrawController(PenConfig())
         return DrawViewModel(
             controller = controller,
             preferencesMgr = PreferencesManager(appContext),

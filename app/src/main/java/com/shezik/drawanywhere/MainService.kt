@@ -53,7 +53,7 @@ class MainService : Service() {
     }
 
     private val toolbarLifecycleOwner = ToolbarLifecycleOwner()
-    private val drawController = DrawController()
+    private lateinit var drawController: DrawController
     private lateinit var windowManager: WindowManager
     private lateinit var canvasView: NativeDrawCanvasView
     private lateinit var toolbarView: ComposeView
@@ -68,6 +68,7 @@ class MainService : Service() {
         val (initialUiState, initialServiceState) = runBlocking {
             preferencesManager.getSavedUiState() to preferencesManager.getSavedServiceState()
         }
+        drawController = DrawController(initialUiState.currentPenConfig)
         viewModel = DrawViewModel(
             controller = drawController,
             preferencesMgr = preferencesManager,

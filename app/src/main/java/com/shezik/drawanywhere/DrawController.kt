@@ -16,8 +16,6 @@ with this program. If not, see <https://www.gnu.org/licenses/>.
 
 package com.shezik.drawanywhere
 
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.geometry.Offset
 import com.shezik.drawanywhere.controller.UndoRedoManager
 import com.shezik.drawanywhere.model.DrawAction
@@ -28,8 +26,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class DrawController {
-    private lateinit var penConfig: PenConfig
+class DrawController(initialConfig: PenConfig) {
+    var penConfig: PenConfig = initialConfig
+        private set
 
     fun setPenConfig(config: PenConfig) {
         penConfig = config
@@ -37,7 +36,7 @@ class DrawController {
 
     var onPathsChanged: (() -> Unit)? = null
 
-    private val _strokeList = mutableStateListOf<DrawObject.Stroke>()
+    private val _strokeList = mutableListOf<DrawObject.Stroke>()
     val strokeList: List<DrawObject.Stroke>
         get() = _strokeList
 
@@ -54,27 +53,22 @@ class DrawController {
     }
 
     fun updateLatestStroke(newPoint: Offset) {
-        if (!this::penConfig.isInitialized)
-            throw IllegalStateException("PenConfig used without initialization!")
         if (penConfig.penType == PenType.StrokeEraser) {
             eraseStroke(newPoint)
             return
         }
         _strokeList.lastOrNull()?.let { stroke ->
             stroke.points.add(newPoint)
-            stroke.invalidatePath()
         }
     }
 
     fun createStroke(newPoint: Offset) {
-        if (!this::penConfig.isInitialized)
-            throw IllegalStateException("PenConfig used without initialization!")
         if (penConfig.penType == PenType.StrokeEraser) {
             eraseStroke(newPoint)
             return
         }
         _strokeList.add(DrawObject.Stroke(
-            points = mutableStateListOf(newPoint),
+            points = mutableListOf(newPoint),
             color = penConfig.color,
             width = penConfig.width,
             alpha = penConfig.alpha
@@ -89,7 +83,6 @@ class DrawController {
             _strokeList.removeAt(_strokeList.lastIndex)
             return
         }
-        undoRedo.clearRedo()
         undoRedo.push(DrawAction.AddPath(latest))
         notifyChanged()
     }
@@ -116,18 +109,14 @@ class DrawController {
         indexToErase?.let {
             val erased = _strokeList.removeAt(it)
             undoRedo.push(DrawAction.ErasePath(erased))
-            erased.releasePath()
-            undoRedo.clearRedo()
             notifyChanged()
         }
     }
 
     fun clearStrokes() {
         if (_strokeList.isEmpty()) return
-        _strokeList.forEach { it.releasePath() }
         undoRedo.push(DrawAction.ClearPaths(_strokeList.toList()))
         _strokeList.clear()
-        undoRedo.clearRedo()
         notifyChanged()
     }
 
@@ -140,7 +129,6 @@ class DrawController {
         when (action) {
             is DrawAction.AddPath -> {
                 if (_strokeList.remove(action.stroke)) {
-                    action.stroke.releasePath()
                     undoRedo.pushRedo(action)
                 }
             }
@@ -161,18 +149,16 @@ class DrawController {
         when (action) {
             is DrawAction.AddPath -> {
                 _strokeList.add(action.stroke)
-                undoRedo.push(action)
+                undoRedo.push(action, clearRedo = false)
             }
             is DrawAction.ErasePath -> {
                 if (_strokeList.remove(action.stroke)) {
-                    action.stroke.releasePath()
-                    undoRedo.push(action)
+                    undoRedo.push(action, clearRedo = false)
                 }
             }
             is DrawAction.ClearPaths -> {
                 _strokeList.removeAll(action.strokes)
-                action.strokes.forEach { it.releasePath() }
-                undoRedo.push(action)
+                undoRedo.push(action, clearRedo = false)
             }
         }
         notifyChanged()

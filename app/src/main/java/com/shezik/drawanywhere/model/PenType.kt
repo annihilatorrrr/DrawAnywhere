@@ -3,7 +3,7 @@ package com.shezik.drawanywhere.model
 import androidx.compose.ui.graphics.Color
 
 enum class PenType {
-    Pen, StrokeEraser
+    Pen, Rectangle, Ellipse, StrokeEraser
 }
 
 data class PenConfig(

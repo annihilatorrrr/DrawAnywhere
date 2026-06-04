@@ -9,6 +9,8 @@
     <string name="expand_toolbar">展开工具栏</string>
     <string name="tools">工具</string>
     <string name="pen">笔</string>
+    <string name="rectangle">矩形</string>
+    <string name="ellipse">椭圆</string>
     <string name="stroke_eraser">笔画橡皮</string>
     <string name="color">颜色</string>
     <string name="width">宽度</string>

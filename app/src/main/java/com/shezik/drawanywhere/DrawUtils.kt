@@ -54,3 +54,19 @@ fun distancePointToLineSegment(p: Offset, a: Offset, b: Offset): Float {
         }
     return distance(p, closest)
 }
+
+fun hitTestRectEdge(
+    point: Offset,
+    left: Float, top: Float, right: Float, bottom: Float,
+    threshold: Float
+): Boolean {
+    // Top edge
+    if (distancePointToLineSegment(point, Offset(left, top), Offset(right, top)) <= threshold) return true
+    // Bottom edge
+    if (distancePointToLineSegment(point, Offset(left, bottom), Offset(right, bottom)) <= threshold) return true
+    // Left edge
+    if (distancePointToLineSegment(point, Offset(left, top), Offset(left, bottom)) <= threshold) return true
+    // Right edge
+    if (distancePointToLineSegment(point, Offset(right, top), Offset(right, bottom)) <= threshold) return true
+    return false
+}

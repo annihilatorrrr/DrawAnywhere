@@ -25,6 +25,8 @@ fun PenTypeSelector(
         )
         val penTypes = listOf(
             PenType.Pen to stringResource(R.string.pen),
+            PenType.Rectangle to stringResource(R.string.rectangle),
+            PenType.Ellipse to stringResource(R.string.ellipse),
             PenType.StrokeEraser to stringResource(R.string.stroke_eraser)
         )
         penTypes.forEach { (penType, label) ->

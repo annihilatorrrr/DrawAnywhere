@@ -22,10 +22,12 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.view.MotionEvent
 import android.view.View
+import android.graphics.RectF
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
 import com.shezik.drawanywhere.DrawController
 import com.shezik.drawanywhere.DrawViewModel
+import com.shezik.drawanywhere.model.PenType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -91,14 +93,27 @@ class NativeDrawCanvasView(
         for (stroke in drawController.strokeList) {
             if (stroke.points.isEmpty()) continue
 
-            val androidPath = buildAndroidPath(stroke.points)
             pathPaint.strokeWidth = stroke.width
             val colorArgb = stroke.color.toArgb()
             val colorAlpha = stroke.color.alpha
             val combinedAlpha = (colorAlpha * stroke.alpha * 255).toInt().coerceIn(0, 255)
             pathPaint.color = (colorArgb and 0x00FFFFFF) or (combinedAlpha shl 24)
 
-            canvas.drawPath(androidPath, pathPaint)
+            when (stroke.penType) {
+                PenType.Rectangle -> {
+                    val p0 = stroke.points[0]; val p1 = stroke.points[1]
+                    canvas.drawRect(p0.x, p0.y, p1.x, p1.y, pathPaint)
+                }
+                PenType.Ellipse -> {
+                    val p0 = stroke.points[0]; val p1 = stroke.points[1]
+                    val rect = RectF(p0.x, p0.y, p1.x, p1.y)
+                    canvas.drawOval(rect, pathPaint)
+                }
+                else -> {
+                    val androidPath = buildAndroidPath(stroke.points)
+                    canvas.drawPath(androidPath, pathPaint)
+                }
+            }
         }
         canvas.restore()
 

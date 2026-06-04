@@ -57,7 +57,12 @@ class DrawController(initialConfig: PenConfig) {
             eraseStroke(newPoint)
             return
         }
-        _strokeList.lastOrNull()?.let { it.points.add(newPoint) }
+        _strokeList.lastOrNull()?.let { stroke ->
+            when (stroke.penType) {
+                PenType.Rectangle, PenType.Ellipse -> stroke.points[1] = newPoint
+                else -> stroke.points.add(newPoint)
+            }
+        }
     }
 
     fun createStroke(newPoint: Offset) {
@@ -65,11 +70,16 @@ class DrawController(initialConfig: PenConfig) {
             eraseStroke(newPoint)
             return
         }
+        val points = when (penConfig.penType) {
+            PenType.Rectangle, PenType.Ellipse -> mutableListOf(newPoint, newPoint)
+            else -> mutableListOf(newPoint)
+        }
         _strokeList.add(DrawObject.Stroke(
-            points = mutableListOf(newPoint),
+            points = points,
             color = penConfig.color,
             width = penConfig.width,
-            alpha = penConfig.alpha
+            alpha = penConfig.alpha,
+            penType = penConfig.penType,
         ))
     }
 
@@ -77,9 +87,23 @@ class DrawController(initialConfig: PenConfig) {
         if (penConfig.penType == PenType.StrokeEraser) return
         if (_strokeList.isEmpty()) return
         val latest = _strokeList.last()
-        if (latest.points.isEmpty()) {
-            _strokeList.removeAt(_strokeList.lastIndex)
-            return
+
+        // Normalize rectangle/ellipse: ensure left < right, top < bottom; discard if too small
+        if (latest.penType == PenType.Rectangle || latest.penType == PenType.Ellipse) {
+            val p0 = latest.points[0]; val p1 = latest.points[1]
+            val left = minOf(p0.x, p1.x); val top = minOf(p0.y, p1.y)
+            val right = maxOf(p0.x, p1.x); val bottom = maxOf(p0.y, p1.y)
+            if (right - left < 4f && bottom - top < 4f) {
+                _strokeList.removeAt(_strokeList.lastIndex)
+                return
+            }
+            latest.points[0] = Offset(left, top)
+            latest.points[1] = Offset(right, bottom)
+        } else {
+            if (latest.points.isEmpty()) {
+                _strokeList.removeAt(_strokeList.lastIndex)
+                return
+            }
         }
         undoRedo.push(DrawAction.AddPath(latest))
         notifyChanged()
@@ -91,15 +115,28 @@ class DrawController(initialConfig: PenConfig) {
         for (i in _strokeList.indices.reversed()) {
             val stroke = _strokeList[i]
             val r = stroke.width / 2 + eraserRadius
-            if (stroke.points.size > 1) {
-                stroke.points.zipWithNext().forEach { (p1, p2) ->
-                    if (distancePointToLineSegment(point, p1, p2) <= r) {
-                        indexToErase = i; return@forEach
+
+            when (stroke.penType) {
+                PenType.Rectangle, PenType.Ellipse -> {
+                    if (stroke.points.size < 2) continue
+                    val p0 = stroke.points[0]; val p1 = stroke.points[1]
+                    if (hitTestRectEdge(point, minOf(p0.x, p1.x), minOf(p0.y, p1.y),
+                            maxOf(p0.x, p1.x), maxOf(p0.y, p1.y), r)) {
+                        indexToErase = i
                     }
                 }
-            } else {
-                stroke.points.firstOrNull()?.let {
-                    if (distance(point, it) <= r) indexToErase = i
+                else -> {
+                    if (stroke.points.size > 1) {
+                        stroke.points.zipWithNext().forEach { (p1, p2) ->
+                            if (distancePointToLineSegment(point, p1, p2) <= r) {
+                                indexToErase = i; return@forEach
+                            }
+                        }
+                    } else {
+                        stroke.points.firstOrNull()?.let {
+                            if (distance(point, it) <= r) indexToErase = i
+                        }
+                    }
                 }
             }
             if (indexToErase != null) break

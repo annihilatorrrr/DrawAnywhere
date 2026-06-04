@@ -17,6 +17,7 @@ sealed class DrawObject {
         val color: Color,
         val width: Float,
         val alpha: Float,
+        val penType: PenType = PenType.Pen,
         val transform: ObjectTransform = ObjectTransform(),
     ) : DrawObject()
 }

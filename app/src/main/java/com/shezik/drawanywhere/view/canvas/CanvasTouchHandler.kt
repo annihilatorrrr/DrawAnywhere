@@ -26,27 +26,19 @@ import com.shezik.drawanywhere.model.StrokeModifier
 import kotlin.math.sqrt
 
 /**
- * Finger-count agnostic touch-input state machine.
+ * Touch dispatch for the drawing canvas. Routes [MotionEvent] into one of:
  *
- * Dispatch: ① multi-touch active → ② enter multi-touch → ③ single-pointer
+ * ① **Multi-touch** — pan/zoom (2-finger) and tap gestures (2+, see [tapGestures]).
+ *    Three+ fingers suppress pan/zoom; only tap detection runs.
+ * ② **Multi-touch entry** — second finger PTR_DOWN.
+ * ③ **Single-pointer** — finger (debounced) or stylus (immediate).
  *
- * ① Multi-touch: pan/zoom on two-finger MOVE, tap detection on finger lift.
- *    Three+ finger gestures suppress pan/zoom; only tap detection runs.
- *    CANCEL / DOWN during multi-touch exits and restores viewport.
+ * Drawing, viewport manipulation, and gesture actions are delegated to
+ * [viewModel] and callbacks. This class owns only the touch routing and
+ * gesture detection state machines.
  *
- * ② Entry: second finger PTR_DOWN enters multi-touch, discarding any
- *    pending single-pointer stroke.
- *
- * ③ Single-pointer: finger gets [FINGER_DEBOUNCE_MS] debounce (accumulates
- *    MOVE points, flushes on expiry). Stylus starts instantly.
- *    UP within debounce with accumulated points flushes a real stroke
- *    (not just a dot).
- *
- * Tap gestures are reported via callbacks; actions are the caller's concern.
- * Double-tap may be deferred ([doubleTapDelayMs] > 0) to avoid losing
- * a subsequent triple-tap (critical for touch-stealing actions like passthrough).
- *
- * Add gestures for additional finger counts by appending to [tapGestures].
+ * @property fingerDrawingEnabled lambda checked on each DOWN — toggle off
+ *   to ignore finger input (stylus-only mode).
  */
 class CanvasTouchHandler(
     private val viewModel: DrawViewModel,
@@ -59,6 +51,8 @@ class CanvasTouchHandler(
     // Double-tap deferral: 0 = immediate, TAP_INTERVAL_MS = wait for triple-tap
     private val twoFingerDoubleTapDelayMs: Long = 0L,
     private val threeFingerDoubleTapDelayMs: Long = TAP_INTERVAL_MS,
+    // Finger drawing toggle: checked on every DOWN to support runtime changes
+    private val fingerDrawingEnabled: () -> Boolean = { true },
 ) {
 
     // ═══════════════════════════════════════════════════════════════
@@ -300,6 +294,10 @@ class CanvasTouchHandler(
             strokeInProgress = true
             strokePending = false
         } else {
+            if (!fingerDrawingEnabled()) {
+                Log.d(TAG, "  → finger DOWN: ignored (finger drawing disabled)")
+                return
+            }
             Log.d(TAG, "  → finger DOWN: pending (debounce=${FINGER_DEBOUNCE_MS}ms)")
             pendingMovePoints.clear()
             pendingMovePoints.add(worldPt)

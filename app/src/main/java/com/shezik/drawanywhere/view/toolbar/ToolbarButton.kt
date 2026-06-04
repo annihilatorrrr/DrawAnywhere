@@ -46,6 +46,8 @@ fun createAllToolbarButtons(
     onChangeOrientation: (ToolbarOrientation) -> Unit,
     onChangeAutoClearCanvas: (Boolean) -> Unit,
     onChangeVisibleOnStart: (Boolean) -> Unit,
+    fingerDrawingEnabled: Boolean,
+    onChangeFingerDrawingEnabled: (Boolean) -> Unit,
     onToggleZoomLock: () -> Unit,
     isZoomLocked: Boolean,
     onQuitApplication: () -> Unit
@@ -124,6 +126,8 @@ fun createAllToolbarButtons(
                 onChangeAutoClearCanvas = onChangeAutoClearCanvas,
                 visibleOnStart = uiState.visibleOnStart,
                 onChangeVisibleOnStart = onChangeVisibleOnStart,
+                fingerDrawingEnabled = fingerDrawingEnabled,
+                onChangeFingerDrawingEnabled = onChangeFingerDrawingEnabled,
                 onQuitApplication = onQuitApplication
             ) },
             { AboutScreen() }

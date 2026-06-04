@@ -26,7 +26,7 @@ class ToolbarGestureTest {
         val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
-            preferencesMgr = PreferencesManager(appContext),
+            preferencesManager = PreferencesManager(appContext),
             initialUiState = UiState(),
             initialServiceState = ServiceState(),
             stopService = {}
@@ -52,7 +52,7 @@ class ToolbarGestureTest {
         val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
-            preferencesMgr = PreferencesManager(appContext),
+            preferencesManager = PreferencesManager(appContext),
             initialUiState = UiState(),
             initialServiceState = ServiceState(),
             stopService = {}

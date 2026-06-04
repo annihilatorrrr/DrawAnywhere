@@ -24,6 +24,8 @@ fun ToolbarControls(
     onChangeAutoClearCanvas: (Boolean) -> Unit,
     visibleOnStart: Boolean,
     onChangeVisibleOnStart: (Boolean) -> Unit,
+    fingerDrawingEnabled: Boolean,
+    onChangeFingerDrawingEnabled: (Boolean) -> Unit,
     onQuitApplication: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -60,6 +62,11 @@ fun ToolbarControls(
             isChecked = visibleOnStart,
             onCheckedChange = onChangeVisibleOnStart
         )
+        CheckboxControl(
+            label = stringResource(R.string.finger_drawing),
+            isChecked = fingerDrawingEnabled,
+            onCheckedChange = onChangeFingerDrawingEnabled
+        )
         Button(
             onClick = onQuitApplication,
             modifier = Modifier.fillMaxWidth(),
@@ -73,7 +80,7 @@ fun ToolbarControls(
 }
 
 @Composable
-fun AboutScreen() {
+internal fun AboutScreen() {
     Box(modifier = Modifier.padding(12.dp)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -126,8 +133,8 @@ fun CheckboxControl(
     description: String? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(

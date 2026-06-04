@@ -27,7 +27,7 @@ class DrawViewModelE2ETest {
         val controller = DrawController(PenConfig())
         return DrawViewModel(
             controller = controller,
-            preferencesMgr = PreferencesManager(appContext),
+            preferencesManager = PreferencesManager(appContext),
             initialUiState = UiState(canvasVisible = canvasVisible, currentPenType = currentPenType),
             initialServiceState = ServiceState(),
             stopService = {}

@@ -16,6 +16,7 @@
     <string name="vertical">Vertical</string>
     <string name="clear_on_hiding_canvas">Clear on hiding canvas</string>
     <string name="canvas_visible_on_start">Canvas visible on start</string>
+    <string name="finger_drawing">Finger drawing</string>
     <string name="quit">Quit</string>
     <string name="hide_canvas">Hide canvas</string>
     <string name="show_canvas">Show canvas</string>

@@ -71,7 +71,7 @@ class MainService : Service() {
         drawController = DrawController(initialUiState.currentPenConfig)
         viewModel = DrawViewModel(
             controller = drawController,
-            preferencesMgr = preferencesManager,
+            preferencesManager = preferencesManager,
             initialUiState = initialUiState,
             initialServiceState = initialServiceState,
             stopService = { stopSelf() }

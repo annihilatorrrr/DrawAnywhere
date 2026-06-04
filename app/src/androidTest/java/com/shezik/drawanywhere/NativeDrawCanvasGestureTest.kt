@@ -22,7 +22,7 @@ class NativeDrawCanvasGestureTest {
         val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
-            preferencesMgr = PreferencesManager(appContext),
+            preferencesManager = PreferencesManager(appContext),
             initialUiState = UiState(),
             initialServiceState = ServiceState(),
             stopService = {}
@@ -49,7 +49,7 @@ class NativeDrawCanvasGestureTest {
         // Verify stylus button mapping via ViewModel
         val vm = DrawViewModel(
             controller = controller,
-            preferencesMgr = PreferencesManager(appContext),
+            preferencesManager = PreferencesManager(appContext),
             initialUiState = UiState(),
             initialServiceState = ServiceState(),
             stopService = {}
@@ -95,23 +95,17 @@ class NativeDrawCanvasGestureTest {
         val (controller, view) = setup()
         val t = System.currentTimeMillis()
 
-        // Finger touch (TOOL_TYPE_FINGER) — should still draw
+        // Finger touch — debounce starts, no stroke yet
         val down = MotionEvent.obtain(t, t, MotionEvent.ACTION_DOWN, 50f, 50f, 0)
         view.onTouchEvent(down)
         down.recycle()
+        assertEquals(0, controller.strokeList.size)  // still pending
 
-        assertEquals(1, controller.strokeList.size)
-
+        // UP resolves as dot
         val up = MotionEvent.obtain(t, t + 50, MotionEvent.ACTION_UP, 60f, 60f, 0)
         view.onTouchEvent(up)
         up.recycle()
 
-        // Stroke should be complete
-        assertTrue(
-            DrawViewModel(
-                controller, PreferencesManager(appContext),
-                UiState(), ServiceState(), {}
-            ).let { true }  // just verify no crash
-        )
+        assertEquals(1, controller.strokeList.size)
     }
 }

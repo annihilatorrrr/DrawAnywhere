@@ -57,6 +57,7 @@ class NativeDrawCanvasView(
         },
         onThreeFingerDoubleTap = { viewModel.toggleCanvasPassthrough() },
         onThreeFingerTripleTap = { viewModel.setCanvasVisibility(false) },
+        fingerDrawingEnabled = { viewModel.uiState.value.fingerDrawingEnabled },
     )
 
     override fun onTouchEvent(event: MotionEvent): Boolean =

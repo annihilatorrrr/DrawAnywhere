@@ -47,6 +47,7 @@ data class UiState(
     val canvasPassthrough: Boolean = false,
     val autoClearCanvas: Boolean = false,
     val visibleOnStart: Boolean = true,
+    val fingerDrawingEnabled: Boolean = true,
 
     val currentPenType: PenType = PenType.Pen,
     val penConfigs: Map<PenType, PenConfig> = defaultPenConfigs(),
@@ -75,7 +76,7 @@ fun defaultPenConfigs(): Map<PenType, PenConfig> = mapOf(
 @OptIn(FlowPreview::class)
 class DrawViewModel(
     private val controller: DrawController,
-    private val preferencesMgr: PreferencesManager,
+    private val preferencesManager: PreferencesManager,
     initialUiState: UiState,
     initialServiceState: ServiceState,
     private val stopService: () -> Unit
@@ -97,7 +98,7 @@ class DrawViewModel(
 
         _uiState
             .debounce(300)
-            .onEach { state -> preferencesMgr.saveUiState(state) }
+            .onEach { state -> preferencesManager.saveUiState(state) }
             .launchIn(viewModelScope)
 
         resetToolbarTimer()
@@ -207,7 +208,7 @@ class DrawViewModel(
         setToolbarPosition(serviceState.value.toolbarPosition + offset)
 
     fun saveToolbarPosition() = viewModelScope.launch {
-        preferencesMgr.saveServiceState(serviceState.value)
+        preferencesManager.saveServiceState(serviceState.value)
     }
 
     fun clearCanvas() = controller.clearStrokes()
@@ -271,6 +272,9 @@ class DrawViewModel(
     fun setVisibleOnStart(state: Boolean) =
         _uiState.update { it.copy(visibleOnStart = state) }
 
+    fun setFingerDrawingEnabled(state: Boolean) =
+        _uiState.update { it.copy(fingerDrawingEnabled = state) }
+
     // --- Viewport ---
 
     fun setViewport(viewport: CanvasViewport) {
@@ -287,8 +291,8 @@ class DrawViewModel(
 
     fun quitApplication() {
         viewModelScope.launch {
-            preferencesMgr.saveUiState(uiState.value)
-            preferencesMgr.saveServiceState(serviceState.value)
+            preferencesManager.saveUiState(uiState.value)
+            preferencesManager.saveServiceState(serviceState.value)
             stopService()
         }
     }

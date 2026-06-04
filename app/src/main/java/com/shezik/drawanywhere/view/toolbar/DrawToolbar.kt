@@ -59,6 +59,8 @@ fun DrawToolbar(
         onChangeOrientation = viewModel::setToolbarOrientation,
         onChangeAutoClearCanvas = viewModel::setAutoClearCanvas,
         onChangeVisibleOnStart = viewModel::setVisibleOnStart,
+        fingerDrawingEnabled = uiState.fingerDrawingEnabled,
+        onChangeFingerDrawingEnabled = viewModel::setFingerDrawingEnabled,
         onToggleZoomLock = viewModel::toggleZoomLock,
         isZoomLocked = viewport.zoomLocked,
         onQuitApplication = viewModel::quitApplication

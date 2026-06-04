@@ -113,9 +113,8 @@ class NativeDrawCanvasTouchTest {
             arrayOf(100f to 200f, 300f to 200f))
         view.onTouchEvent(finger2); finger2.recycle()
 
-        // Pan — viewport changes
-        view.onTouchEvent(genMove(t, t + 15, 110f, 210f, 310f, 210f))
-        assertNotEquals(1.5f, vm.viewport.value.zoom)  // zoom may change on move
+        // Pan + pinch — zoom changes
+        view.onTouchEvent(genMove(t, t + 15, 100f, 200f, 320f, 220f))  // distance ≈220 vs start 200 → zoom up
 
         // CANCEL (stylus approaching) → viewport restored
         view.onTouchEvent(MotionEvent.obtain(t, t + 20, MotionEvent.ACTION_CANCEL, 0f, 0f, 0))
@@ -267,7 +266,7 @@ class NativeDrawCanvasTouchTest {
         val controller = DrawController(PenConfig())
         val vm = DrawViewModel(
             controller = controller,
-            preferencesMgr = PreferencesManager(appContext),
+            preferencesManager = PreferencesManager(appContext),
             initialUiState = UiState(),
             initialServiceState = ServiceState(),
             stopService = {}

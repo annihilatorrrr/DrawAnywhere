@@ -73,7 +73,7 @@ class CanvasTouchHandler(
         private const val FINGER_DEBOUNCE_MS = 50L
         private const val TAP_MAX_DURATION_MS = 300L
         private const val TAP_MAX_MOVEMENT_PX = 40f
-        private const val TAP_INTERVAL_MS = 150L
+        private const val TAP_INTERVAL_MS = 200L
     }
 
     // ═══════════════════════════════════════════════════════════════

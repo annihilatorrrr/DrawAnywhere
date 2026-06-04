@@ -6,7 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import com.shezik.drawanywhere.model.StrokeModifier
-import com.shezik.drawanywhere.view.toolbar.ToolbarOrientation
+import com.shezik.drawanywhere.model.ToolbarOrientation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*

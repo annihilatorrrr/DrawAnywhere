@@ -24,7 +24,7 @@ import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import com.shezik.drawanywhere.model.StrokeModifier
 import com.shezik.drawanywhere.view.canvas.CanvasViewport
-import com.shezik.drawanywhere.view.toolbar.ToolbarOrientation
+import com.shezik.drawanywhere.model.ToolbarOrientation
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -48,6 +48,7 @@ data class UiState(
     val autoClearCanvas: Boolean = false,
     val visibleOnStart: Boolean = true,
     val fingerDrawingEnabled: Boolean = true,
+    val recentColors: List<Color> = emptyList(),
 
     val currentPenType: PenType = PenType.Pen,
     val penConfigs: Map<PenType, PenConfig> = defaultPenConfigs(),
@@ -189,7 +190,19 @@ class DrawViewModel(
         _uiState.update { it.copy(canvasPassthrough = passthrough, secondDrawerPinnedButtons = newPinned) }
     }
 
-    fun setPenColor(color: Color) = updateCurrentPenConfig { copy(color = color) }
+    fun setPenColor(color: Color, trackRecent: Boolean = true) {
+        updateCurrentPenConfig { copy(color = color) }
+        if (trackRecent) addRecentColor(color)
+    }
+
+    fun setPresetColor(color: Color) = setPenColor(color, trackRecent = false)
+
+    private fun addRecentColor(color: Color) {
+        val current = uiState.value.recentColors
+        if (current.contains(color)) return
+        val updated = listOf(color) + current
+        _uiState.update { it.copy(recentColors = updated.take(6)) }
+    }
 
     fun setStrokeWidth(width: Float) = updateCurrentPenConfig { copy(width = width) }
 

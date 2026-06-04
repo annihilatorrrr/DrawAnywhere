@@ -17,7 +17,6 @@ with this program. If not, see <https://www.gnu.org/licenses/>.
 package com.shezik.drawanywhere
 
 import androidx.compose.ui.geometry.Offset
-import com.shezik.drawanywhere.controller.UndoRedoManager
 import com.shezik.drawanywhere.drawing.StrokeTool
 import com.shezik.drawanywhere.drawing.ToolContext
 import com.shezik.drawanywhere.model.DrawAction

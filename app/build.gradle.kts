@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.material)
+    implementation("com.godaddy.android.colorpicker:compose-color-picker-android:0.7.0")
 
     // Transitive dependencies
     androidTestImplementation(libs.androidx.monitor)

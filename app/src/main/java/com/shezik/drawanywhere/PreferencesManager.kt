@@ -21,7 +21,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
-import com.shezik.drawanywhere.view.toolbar.ToolbarOrientation
+import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -44,6 +44,7 @@ class PreferencesManager(private val context: Context) {
         val AUTO_CLEAR_CANVAS = booleanPreferencesKey("auto_clear_canvas")
         val VISIBLE_ON_START = booleanPreferencesKey("visible_on_start")
         val FINGER_DRAWING_ENABLED = booleanPreferencesKey("finger_drawing_enabled")
+        val RECENT_COLORS = stringPreferencesKey("recent_colors")
 
         // Pen-specific keys (for saving multiple pens)
         fun penColorKey(penType: PenType) = intPreferencesKey("${penType.name}_color")
@@ -96,6 +97,12 @@ class PreferencesManager(private val context: Context) {
 
         val visibleOnStart = preferences[PreferencesKeys.VISIBLE_ON_START] ?: defaultUiState.visibleOnStart
         val fingerDrawingEnabled = preferences[PreferencesKeys.FINGER_DRAWING_ENABLED] ?: defaultUiState.fingerDrawingEnabled
+        val recentColorsStr = preferences[PreferencesKeys.RECENT_COLORS] ?: ""
+        val recentColors = if (recentColorsStr.isNotEmpty())
+            recentColorsStr.split(",").mapNotNull { s ->
+                try { Color(s.toLong(16).toInt()) } catch (_: Exception) { null }
+            }
+        else emptyList()
 
         return UiState(
             currentPenType = currentPenType,
@@ -107,6 +114,7 @@ class PreferencesManager(private val context: Context) {
 
             visibleOnStart = visibleOnStart,
             fingerDrawingEnabled = fingerDrawingEnabled,
+            recentColors = recentColors,
             canvasVisible = visibleOnStart,
             firstDrawerOpen = visibleOnStart
         )
@@ -119,6 +127,7 @@ class PreferencesManager(private val context: Context) {
             preferences[PreferencesKeys.AUTO_CLEAR_CANVAS] = uiState.autoClearCanvas
             preferences[PreferencesKeys.VISIBLE_ON_START] = uiState.visibleOnStart
             preferences[PreferencesKeys.FINGER_DRAWING_ENABLED] = uiState.fingerDrawingEnabled
+            preferences[PreferencesKeys.RECENT_COLORS] = uiState.recentColors.joinToString(",") { it.toArgb().toString(16).padStart(8, '0') }
 
             // Save each pen's configuration
             for ((penType, config) in uiState.penConfigs) {

@@ -67,7 +67,6 @@ class CanvasTouchHandler(
     private var pendingModifier: StrokeModifier = StrokeModifier.None
     private val pendingMovePoints = mutableListOf<Offset>()
     private var downTimeMs: Long = 0L
-
     companion object {
         private const val FINGER_DEBOUNCE_MS = 50L
     }

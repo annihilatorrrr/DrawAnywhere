@@ -1,4 +1,4 @@
-package com.shezik.drawanywhere.lifecycle
+package com.shezik.drawanywhere
 
 import android.view.View
 import androidx.lifecycle.Lifecycle

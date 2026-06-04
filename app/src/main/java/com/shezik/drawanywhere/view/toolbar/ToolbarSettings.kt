@@ -1,5 +1,6 @@
 package com.shezik.drawanywhere.view.toolbar
 
+import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape

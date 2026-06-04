@@ -1,6 +1,7 @@
 package com.shezik.drawanywhere.view.toolbar
 
 import android.annotation.SuppressLint
+import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -54,6 +55,7 @@ fun DrawToolbar(
         onRedo = viewModel::redo,
         onPenTypeSwitch = viewModel::switchToPen,
         onColorChange = viewModel::setPenColor,
+        onPresetColorChange = viewModel::setPresetColor,
         onStrokeWidthChange = viewModel::setStrokeWidth,
         onAlphaChange = viewModel::setStrokeAlpha,
         onChangeOrientation = viewModel::setToolbarOrientation,

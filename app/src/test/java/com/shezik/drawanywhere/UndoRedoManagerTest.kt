@@ -1,4 +1,4 @@
-package com.shezik.drawanywhere.controller
+package com.shezik.drawanywhere
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color

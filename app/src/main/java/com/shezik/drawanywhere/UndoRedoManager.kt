@@ -1,4 +1,4 @@
-package com.shezik.drawanywhere.controller
+package com.shezik.drawanywhere
 
 import com.shezik.drawanywhere.model.DrawAction
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -36,7 +36,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.round
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import com.shezik.drawanywhere.lifecycle.ToolbarLifecycleOwner
 import com.shezik.drawanywhere.view.canvas.NativeDrawCanvasView
 import com.shezik.drawanywhere.view.toolbar.DrawToolbar
 import kotlinx.coroutines.CoroutineScope

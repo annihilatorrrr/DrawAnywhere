@@ -3,7 +3,7 @@ package com.shezik.drawanywhere
 import androidx.compose.ui.geometry.Offset
 import androidx.test.platform.app.InstrumentationRegistry
 import com.shezik.drawanywhere.model.PenType
-import com.shezik.drawanywhere.view.toolbar.ToolbarOrientation
+import com.shezik.drawanywhere.model.ToolbarOrientation
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test

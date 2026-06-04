@@ -1,5 +1,6 @@
 package com.shezik.drawanywhere.view.toolbar
 
+import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi

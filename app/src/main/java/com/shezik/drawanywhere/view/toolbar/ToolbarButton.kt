@@ -46,6 +46,8 @@ fun createAllToolbarButtons(
     onChangeOrientation: (ToolbarOrientation) -> Unit,
     onChangeAutoClearCanvas: (Boolean) -> Unit,
     onChangeVisibleOnStart: (Boolean) -> Unit,
+    onToggleZoomLock: () -> Unit,
+    isZoomLocked: Boolean,
     onQuitApplication: () -> Unit
 ): List<ToolbarButton> = listOf(
     ToolbarButton(
@@ -88,6 +90,13 @@ fun createAllToolbarButtons(
         popupPages = listOf(
             { ColorPicker(selectedColor = uiState.currentPenConfig.color, onColorSelected = onColorChange) }
         )
+    ),
+    ToolbarButton(
+        id = "zoom_lock",
+        icon = if (isZoomLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+        contentDescription = if (isZoomLocked) stringResource(R.string.unlock_zoom) else stringResource(R.string.lock_zoom),
+        isEnabled = uiState.canvasVisible,
+        onClick = onToggleZoomLock
     ),
     ToolbarButton(
         id = "passthrough",

@@ -57,9 +57,7 @@ class DrawController(initialConfig: PenConfig) {
             eraseStroke(newPoint)
             return
         }
-        _strokeList.lastOrNull()?.let { stroke ->
-            stroke.points.add(newPoint)
-        }
+        _strokeList.lastOrNull()?.let { it.points.add(newPoint) }
     }
 
     fun createStroke(newPoint: Offset) {

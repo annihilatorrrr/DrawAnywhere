@@ -27,6 +27,8 @@
     <string name="redo">Redo</string>
     <string name="settings">Settings</string>
     <string name="enable_passthrough">Enable passthrough</string>
+    <string name="lock_zoom">Lock zoom</string>
+    <string name="unlock_zoom">Unlock zoom</string>
     <string name="copyright">© 2025 shezik, licensed under AGPLv3 or any later version.</string>
     <string name="licenses" >App icon by Solar Icons, licensed under CC BY 4.0.</string>
 </resources>

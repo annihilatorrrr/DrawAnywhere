@@ -36,6 +36,7 @@ fun DrawToolbar(
     val canUndo by viewModel.canUndo.collectAsState()
     val canRedo by viewModel.canRedo.collectAsState()
     val canClearCanvas by viewModel.canClearCanvas.collectAsState()
+    val viewport by viewModel.viewport.collectAsState()
 
     val haptics = LocalHapticFeedback.current
     val hScrollState = rememberScrollState()
@@ -58,6 +59,8 @@ fun DrawToolbar(
         onChangeOrientation = viewModel::setToolbarOrientation,
         onChangeAutoClearCanvas = viewModel::setAutoClearCanvas,
         onChangeVisibleOnStart = viewModel::setVisibleOnStart,
+        onToggleZoomLock = viewModel::toggleZoomLock,
+        isZoomLocked = viewport.zoomLocked,
         onQuitApplication = viewModel::quitApplication
     ).associateBy { it.id }
 

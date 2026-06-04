@@ -17,7 +17,6 @@ with this program. If not, see <https://www.gnu.org/licenses/>.
 package com.shezik.drawanywhere
 
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Path
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -54,22 +53,4 @@ fun distancePointToLineSegment(p: Offset, a: Offset, b: Offset): Float {
             Offset(a.x + t * ab.x, a.y + t * ab.y)
         }
     return distance(p, closest)
-}
-
-fun calculateMidpoint(start: Offset, end: Offset) =
-    Offset((start.x + end.x) / 2, (start.y + end.y) / 2)
-
-fun pointsToPath(points: List<Offset>) = Path().apply {
-    if (points.isEmpty())
-        return@apply
-
-    moveTo(points.first().x, points.first().y)
-    points.zipWithNext().forEachIndexed { index, (start, end) ->
-        val mid = calculateMidpoint(start, end)
-        if (index == 0)
-            lineTo(mid.x, mid.y)
-        else
-            quadraticTo(start.x, start.y, mid.x, mid.y)
-    }
-    lineTo(points.last().x, points.last().y)
 }

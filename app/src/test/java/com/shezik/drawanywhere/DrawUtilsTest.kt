@@ -64,11 +64,4 @@ class DrawUtilsTest {
         // distance from (1,1) to (3,4) = sqrt((2)^2+(3)^2) = sqrt(13)
         assertEquals(3.6055f, dist, 0.01f)
     }
-
-    @Test
-    fun calculateMidpoint() {
-        val mid = calculateMidpoint(Offset(0f, 10f), Offset(10f, 20f))
-        assertEquals(5f, mid.x, 0.001f)
-        assertEquals(15f, mid.y, 0.001f)
-    }
 }

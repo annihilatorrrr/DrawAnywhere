@@ -23,6 +23,7 @@ import androidx.lifecycle.viewModelScope
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import com.shezik.drawanywhere.model.StrokeModifier
+import com.shezik.drawanywhere.view.canvas.CanvasViewport
 import com.shezik.drawanywhere.view.toolbar.ToolbarOrientation
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -55,7 +56,7 @@ data class UiState(
     val secondDrawerOpen: Boolean = false,
 
     val firstDrawerButtons: Set<String> = setOf(
-        "undo", "clear", "tool_controls", "color_picker"
+        "undo", "clear", "tool_controls", "color_picker", "zoom_lock"
     ),
     val secondDrawerButtons: Set<String> = setOf(
         "passthrough", "redo", "settings"
@@ -85,6 +86,9 @@ class DrawViewModel(
     private val _serviceState = MutableStateFlow(initialServiceState)
     val serviceState: StateFlow<ServiceState> = _serviceState.asStateFlow()
 
+    private val _viewport = MutableStateFlow(CanvasViewport())
+    val viewport: StateFlow<CanvasViewport> = _viewport.asStateFlow()
+
     val canUndo: StateFlow<Boolean> = controller.canUndo
     val canRedo: StateFlow<Boolean> = controller.canRedo
     val canClearCanvas: StateFlow<Boolean> = controller.canClearPaths
@@ -96,10 +100,6 @@ class DrawViewModel(
             .onEach { state -> preferencesMgr.saveUiState(state) }
             .launchIn(viewModelScope)
 
-        _uiState
-            .onEach { state -> controller.setPenConfig(state.currentPenConfig) }
-            .launchIn(viewModelScope)
-
         resetToolbarTimer()
     }
 
@@ -108,8 +108,10 @@ class DrawViewModel(
         dimmingJob?.cancel()
     }
 
-    fun switchToPen(type: PenType) =
+    fun switchToPen(type: PenType) {
         _uiState.update { it.copy(currentPenType = type) }
+        controller.setPenConfig(uiState.value.currentPenConfig)
+    }
 
     fun resolvePenType(modifier: StrokeModifier) =
         when (modifier) {
@@ -188,13 +190,15 @@ class DrawViewModel(
 
     fun setStrokeAlpha(alpha: Float) = updateCurrentPenConfig { copy(alpha = alpha) }
 
-    private fun updateCurrentPenConfig(transform: PenConfig.() -> PenConfig) =
+    private fun updateCurrentPenConfig(transform: PenConfig.() -> PenConfig) {
         _uiState.update { state ->
             val configs = state.penConfigs.toMutableMap()
             val current = configs[state.currentPenType] ?: PenConfig(penType = state.currentPenType)
             configs[state.currentPenType] = current.transform()
             state.copy(penConfigs = configs)
         }
+        controller.setPenConfig(uiState.value.currentPenConfig)
+    }
 
     fun setToolbarPosition(position: Offset) =
         _serviceState.update { it.copy(toolbarPosition = position) }
@@ -266,6 +270,20 @@ class DrawViewModel(
 
     fun setVisibleOnStart(state: Boolean) =
         _uiState.update { it.copy(visibleOnStart = state) }
+
+    // --- Viewport ---
+
+    fun setViewport(viewport: CanvasViewport) {
+        _viewport.value = viewport
+    }
+
+    fun toggleZoomLock() {
+        _viewport.update { it.withZoomLock(!it.zoomLocked) }
+    }
+
+    fun resetViewport(screenCenter: Offset) {
+        _viewport.value = _viewport.value.resetAt(screenCenter)
+    }
 
     fun quitApplication() {
         viewModelScope.launch {

@@ -12,7 +12,7 @@ PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License along
 with this program. If not, see <https://www.gnu.org/licenses/>.
- */
+*/
 
 package com.shezik.drawanywhere.view.canvas
 
@@ -22,10 +22,14 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.view.MotionEvent
 import android.view.View
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
 import com.shezik.drawanywhere.DrawController
 import com.shezik.drawanywhere.DrawViewModel
-import com.shezik.drawanywhere.model.StrokeModifier
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class NativeDrawCanvasView(
     context: Context,
@@ -33,8 +37,20 @@ class NativeDrawCanvasView(
     private val viewModel: DrawViewModel,
 ) : View(context) {
 
-    private var activePointerId: Int = -1
-    private var strokeInProgress: Boolean = false
+    // ── Touch input (delegated) ───────────────────────────────────
+
+    private val touchHandler = CanvasTouchHandler(viewModel) { invalidate() }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        touchHandler.viewWidth = w
+        touchHandler.viewHeight = h
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean =
+        touchHandler.handleEvent(event)
+
+    // ── Rendering ─────────────────────────────────────────────────
 
     private val pathPaint = Paint().apply {
         style = Paint.Style.STROKE
@@ -43,18 +59,27 @@ class NativeDrawCanvasView(
         isAntiAlias = true
     }
 
+    private val hudPaint = Paint().apply {
+        color = 0xCC_FFFFFF.toInt()
+        textSize = 18f * context.resources.displayMetrics.density
+        isAntiAlias = true
+        setShadowLayer(4f, 0f, 1f, 0x88000000.toInt())
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        // No background fill — overlay window is already TRANSLUCENT.
+
+        val vp = viewModel.viewport.value
+
+        canvas.save()
+        canvas.translate(-vp.panX * vp.zoom, -vp.panY * vp.zoom)
+        canvas.scale(vp.zoom, vp.zoom)
 
         for (stroke in drawController.strokeList) {
             if (stroke.points.isEmpty()) continue
 
             val androidPath = buildAndroidPath(stroke.points)
             pathPaint.strokeWidth = stroke.width
-
-            // Combine color's intrinsic alpha with stroke-level opacity.
-            // Paint.setAlpha() replaces (not multiplies) the alpha channel.
             val colorArgb = stroke.color.toArgb()
             val colorAlpha = stroke.color.alpha
             val combinedAlpha = (colorAlpha * stroke.alpha * 255).toInt().coerceIn(0, 255)
@@ -62,61 +87,37 @@ class NativeDrawCanvasView(
 
             canvas.drawPath(androidPath, pathPaint)
         }
-    }
+        canvas.restore()
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                activePointerId = event.getPointerId(0)
-                val modifier = detectStrokeModifier(event)
-                viewModel.startStroke(
-                    point = androidx.compose.ui.geometry.Offset(event.x, event.y),
-                    modifier = modifier
-                )
-                strokeInProgress = true
-            }
-
-            MotionEvent.ACTION_MOVE -> {
-                if (!strokeInProgress) return false
-                val pi = event.findPointerIndex(activePointerId)
-                if (pi < 0) return false
-
-                for (i in 0 until event.historySize) {
-                    viewModel.updateStroke(androidx.compose.ui.geometry.Offset(
-                        event.getHistoricalX(pi, i), event.getHistoricalY(pi, i)))
-                }
-                viewModel.updateStroke(androidx.compose.ui.geometry.Offset(
-                    event.getX(pi), event.getY(pi)))
-                invalidate()
-            }
-
-            MotionEvent.ACTION_UP,
-            MotionEvent.ACTION_CANCEL -> {
-                strokeInProgress = false
-                activePointerId = -1
-                viewModel.finishStroke()
-                invalidate()
-            }
-        }
-        return true
-    }
-
-    private fun detectStrokeModifier(event: MotionEvent): StrokeModifier {
-        if (event.getToolType(0) != MotionEvent.TOOL_TYPE_STYLUS) return StrokeModifier.None
-        val b = event.buttonState
-        val primary = (b and MotionEvent.BUTTON_STYLUS_PRIMARY) != 0
-        val secondary = (b and MotionEvent.BUTTON_STYLUS_SECONDARY) != 0
-        return when {
-            primary && secondary -> StrokeModifier.Both
-            primary -> StrokeModifier.PrimaryButton
-            secondary -> StrokeModifier.SecondaryButton
-            else -> StrokeModifier.None
+        // ── Zoom HUD ─────────────────────────────────────────────
+        val zoomPct = (vp.zoom * 100).toInt()
+        val label = if (zoomPct == 100) "" else "${zoomPct}%"
+        val lockIcon = if (vp.zoomLocked) " 🔒" else ""
+        if (label.isNotEmpty() || vp.zoomLocked) {
+            canvas.drawText("$label$lockIcon", 24f, height - 48f, hudPaint)
         }
     }
+
+    // ── Viewport observation (for HUD updates) ────────────────────
+
+    private var viewportScope: CoroutineScope? = null
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        viewportScope = CoroutineScope(Dispatchers.Main).apply {
+            launch { viewModel.viewport.collect { invalidate() } }
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        viewportScope?.cancel()
+    }
+
+    // ── Path builder ─────────────────────────────────────────────
 
     private fun buildAndroidPath(
-        points: List<androidx.compose.ui.geometry.Offset>
+        points: List<Offset>
     ): Path {
         val p = Path()
         if (points.isEmpty()) return p

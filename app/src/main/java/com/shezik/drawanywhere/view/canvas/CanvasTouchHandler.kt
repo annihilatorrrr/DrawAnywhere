@@ -1,0 +1,422 @@
+/*
+DrawAnywhere: An Android application that lets you draw on top of other apps.
+Copyright (C) 2025 shezik
+
+This program is free software: you can redistribute it and/or modify it under the
+terms of the GNU Affero General Public License as published by the Free Software
+Foundation, either version 3 of the License, or any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
+*/
+
+package com.shezik.drawanywhere.view.canvas
+
+import android.util.Log
+import android.view.MotionEvent
+import androidx.compose.ui.geometry.Offset
+import com.shezik.drawanywhere.DrawViewModel
+import com.shezik.drawanywhere.model.StrokeModifier
+import kotlin.math.sqrt
+
+/**
+ * Pure touch-input state machine for the drawing canvas.
+ *
+ * Responsibilities:
+ * ① Route multi-touch (pan/zoom) events
+ * ② Enter/exit multi-touch mode
+ * ③ Single-pointer drawing (finger debounce, stylus instant)
+ *
+ * Does NOT know about View, Canvas, or rendering — communicates
+ * through [onInvalidate] and [viewModel].
+ */
+class CanvasTouchHandler(
+    private val viewModel: DrawViewModel,
+    private val onInvalidate: () -> Unit,
+) {
+    // Updated by the owning View on size changes
+    var viewWidth: Int = 0
+    var viewHeight: Int = 0
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Touch state
+    // ═══════════════════════════════════════════════════════════════
+
+    private val TAG = "DrawTouch"
+
+    private var activePointerId: Int = -1
+    private var strokeInProgress: Boolean = false
+    private var strokePending: Boolean = false
+    private var pendingModifier: StrokeModifier = StrokeModifier.None
+    private val pendingMovePoints = mutableListOf<Offset>()
+    private var downTimeMs: Long = 0L
+
+    companion object {
+        private const val FINGER_DEBOUNCE_MS = 50L
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Multi-touch state
+    // ═══════════════════════════════════════════════════════════════
+
+    private var isMultiTouch: Boolean = false
+    private var multiTouchStartDist: Float = 0f
+    private var multiTouchStartMid: Pair<Float, Float> = 0f to 0f
+    private var multiTouchStartPanX: Float = 0f
+    private var multiTouchStartPanY: Float = 0f
+    private var multiTouchStartZoom: Float = 1f
+    private var multiTouchStartZoomLocked: Boolean = false
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Double-tap detection
+    // ═══════════════════════════════════════════════════════════════
+
+    private var lastTwoFingerTapTime: Long = 0L
+    private var twoFingerTapCount: Int = 0
+    private var twoFingerDownTime: Long = 0L
+    private var twoFingerStartX: Float = 0f
+    private var twoFingerStartY: Float = 0f
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Logging helpers
+    // ═══════════════════════════════════════════════════════════════
+
+    private fun toolTypeName(toolType: Int): String = when (toolType) {
+        MotionEvent.TOOL_TYPE_FINGER -> "FINGER"
+        MotionEvent.TOOL_TYPE_STYLUS -> "STYLUS"
+        MotionEvent.TOOL_TYPE_ERASER -> "ERASER"
+        MotionEvent.TOOL_TYPE_MOUSE -> "MOUSE"
+        else -> "UNKNOWN($toolType)"
+    }
+
+    private fun eventActionName(action: Int): String = when (action) {
+        MotionEvent.ACTION_DOWN -> "DOWN"
+        MotionEvent.ACTION_UP -> "UP"
+        MotionEvent.ACTION_MOVE -> "MOVE"
+        MotionEvent.ACTION_CANCEL -> "CANCEL"
+        MotionEvent.ACTION_POINTER_DOWN -> "PTR_DOWN"
+        MotionEvent.ACTION_POINTER_UP -> "PTR_UP"
+        else -> "?$action"
+    }
+
+    private fun logPointers(event: MotionEvent, prefix: String = "") {
+        val sb = StringBuilder("$prefix ptrs=${event.pointerCount} [")
+        for (i in 0 until event.pointerCount) {
+            val pid = event.getPointerId(i)
+            val tt = toolTypeName(event.getToolType(i))
+            sb.append("#$pid=$tt(${event.getX(i).toInt()},${event.getY(i).toInt()})")
+            if (i < event.pointerCount - 1) sb.append(", ")
+        }
+        sb.append("]")
+        Log.d(TAG, sb.toString())
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Touch dispatch: ① multi-touch → ② enter → ③ single-pointer
+    // ═══════════════════════════════════════════════════════════════
+
+    fun handleEvent(event: MotionEvent): Boolean {
+        // Log every event except single-finger MOVE (too noisy)
+        if (event.actionMasked != MotionEvent.ACTION_MOVE || event.pointerCount >= 2) {
+            logPointers(event, eventActionName(event.actionMasked))
+        }
+
+        // ① Multi-touch active → dispatch; return if consumed
+        if (isMultiTouch && handleMultiTouchMode(event)) return true
+
+        // ② Enter multi-touch on second finger
+        if (shouldEnterMultiTouch(event)) {
+            enterMultiTouch(event)
+            return true
+        }
+
+        // ③ Single-pointer drawing
+        handleSinglePointer(event)
+        return true
+    }
+
+    // ── ① Multi-touch mode dispatch ──────────────────────────────
+
+    private fun handleMultiTouchMode(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                Log.d(TAG, "  → DOWN while in multi-touch: exiting (was interrupted)")
+                exitMultiTouch()
+                return false
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                Log.d(TAG, "  → CANCEL while in multi-touch: abandoning")
+                exitMultiTouch()
+                cancelAnyStroke()
+                return false
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (event.pointerCount >= 2) handleMultiTouchMove(event)
+            }
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (event.pointerCount <= 2) finishMultiTouch(event)
+            }
+            MotionEvent.ACTION_UP -> {
+                finishMultiTouch(event)
+            }
+        }
+        if (isMultiTouch) {
+            onInvalidate()
+            return true
+        }
+        return false
+    }
+
+    private fun exitMultiTouch() {
+        isMultiTouch = false
+        viewModel.setViewport(CanvasViewport(
+            zoom = multiTouchStartZoom,
+            panX = multiTouchStartPanX,
+            panY = multiTouchStartPanY,
+            zoomLocked = multiTouchStartZoomLocked,
+        ))
+    }
+
+    private fun cancelAnyStroke() {
+        if (strokeInProgress) {
+            strokeInProgress = false
+            activePointerId = -1
+            viewModel.finishStroke()
+        }
+        strokePending = false
+    }
+
+    // ── ② Enter multi-touch ──────────────────────────────────────
+
+    private fun shouldEnterMultiTouch(event: MotionEvent): Boolean =
+        event.actionMasked == MotionEvent.ACTION_POINTER_DOWN && event.pointerCount >= 2
+
+    private fun enterMultiTouch(event: MotionEvent) {
+        Log.d(TAG, "  → entering multi-touch (2+ fingers, no stylus)")
+        discardPendingStroke()
+        cancelAnyStroke()
+        isMultiTouch = true
+        twoFingerDownTime = event.eventTime
+        twoFingerStartX = (event.getX(0) + event.getX(1)) / 2f
+        twoFingerStartY = (event.getY(0) + event.getY(1)) / 2f
+        startMultiTouch(event)
+        onInvalidate()
+    }
+
+    private fun discardPendingStroke() {
+        strokePending = false
+        pendingMovePoints.clear()
+    }
+
+    // ── ③ Single-pointer drawing ─────────────────────────────────
+
+    private fun handleSinglePointer(event: MotionEvent) {
+        val vp = viewModel.viewport.value
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN              -> onPointerDown(event, vp)
+            MotionEvent.ACTION_MOVE              -> onPointerMove(event, vp)
+            MotionEvent.ACTION_UP,
+            MotionEvent.ACTION_CANCEL            -> onPointerUp(event)
+        }
+    }
+
+    private fun onPointerDown(event: MotionEvent, vp: CanvasViewport) {
+        activePointerId = event.getPointerId(0)
+        val toolType = event.getToolType(0)
+        val isStylus = toolType == MotionEvent.TOOL_TYPE_STYLUS || toolType == MotionEvent.TOOL_TYPE_ERASER
+        downTimeMs = event.eventTime
+        pendingModifier = detectStrokeModifier(event)
+        val worldPt = vp.screenToWorld(Offset(event.x, event.y))
+
+        if (isStylus) {
+            Log.d(TAG, "  → stylus DOWN: instant stroke, ptr=#$activePointerId mod=$pendingModifier")
+            viewModel.startStroke(worldPt, pendingModifier)
+            strokeInProgress = true
+            strokePending = false
+        } else {
+            Log.d(TAG, "  → finger DOWN: pending (debounce=${FINGER_DEBOUNCE_MS}ms)")
+            pendingMovePoints.clear()
+            pendingMovePoints.add(worldPt)
+            strokePending = true
+        }
+    }
+
+    private fun onPointerMove(event: MotionEvent, vp: CanvasViewport) {
+        if (strokePending) {
+            accumulatePendingPoints(event, vp)
+            if (event.eventTime - downTimeMs < FINGER_DEBOUNCE_MS) return
+            flushPendingStroke(event.eventTime)
+            onInvalidate()
+            return
+        }
+        if (!strokeInProgress) return
+        appendPointsToStroke(event, vp)
+        onInvalidate()
+    }
+
+    private fun accumulatePendingPoints(event: MotionEvent, vp: CanvasViewport) {
+        val pi = event.findPointerIndex(activePointerId)
+        if (pi < 0) return
+        for (i in 0 until event.historySize) {
+            pendingMovePoints.add(vp.screenToWorld(
+                Offset(event.getHistoricalX(pi, i), event.getHistoricalY(pi, i))))
+        }
+        pendingMovePoints.add(vp.screenToWorld(
+            Offset(event.getX(pi), event.getY(pi))))
+    }
+
+    private fun flushPendingStroke(eventTime: Long) {
+        Log.d(TAG, "  → debounce expired (${eventTime - downTimeMs}ms): flushing ${pendingMovePoints.size} pts")
+        val start = pendingMovePoints.removeAt(0)
+        viewModel.startStroke(start, pendingModifier)
+        for (pt in pendingMovePoints) viewModel.updateStroke(pt)
+        pendingMovePoints.clear()
+        strokeInProgress = true
+        strokePending = false
+    }
+
+    private fun appendPointsToStroke(event: MotionEvent, vp: CanvasViewport) {
+        val pi = event.findPointerIndex(activePointerId)
+        if (pi < 0) return
+        for (i in 0 until event.historySize) {
+            viewModel.updateStroke(vp.screenToWorld(
+                Offset(event.getHistoricalX(pi, i), event.getHistoricalY(pi, i))))
+        }
+        viewModel.updateStroke(vp.screenToWorld(
+            Offset(event.getX(pi), event.getY(pi))))
+    }
+
+    private fun onPointerUp(event: MotionEvent) {
+        val actionName = eventActionName(event.actionMasked)
+        if (strokePending) {
+            if (pendingMovePoints.size > 1) {
+                Log.d(TAG, "  → tap aborted: flushing ${pendingMovePoints.size} accumulated pts")
+                flushPendingStroke(event.eventTime)
+                viewModel.finishStroke()
+                strokeInProgress = false
+            } else {
+                Log.d(TAG, "  → tap completed (dot)")
+                viewModel.startStroke(pendingMovePoints.first(), pendingModifier)
+                viewModel.finishStroke()
+            }
+            discardPendingStroke()
+        }
+        if (strokeInProgress) {
+            Log.d(TAG, "  → $actionName: finishing stroke, ptr=#$activePointerId")
+            strokeInProgress = false
+            activePointerId = -1
+            viewModel.finishStroke()
+        }
+        onInvalidate()
+    }
+
+    // ── Multi-touch gesture helpers ───────────────────────────────
+
+    private fun startMultiTouch(event: MotionEvent) {
+        val x0 = event.getX(0); val y0 = event.getY(0)
+        val x1 = event.getX(1); val y1 = event.getY(1)
+        multiTouchStartDist = sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0))
+        multiTouchStartMid = ((x0 + x1) / 2f) to ((y0 + y1) / 2f)
+
+        val vp = viewModel.viewport.value
+        multiTouchStartPanX = vp.panX
+        multiTouchStartPanY = vp.panY
+        multiTouchStartZoom = vp.zoom
+        multiTouchStartZoomLocked = vp.zoomLocked
+    }
+
+    private fun handleMultiTouchMove(event: MotionEvent) {
+        val x0 = event.getX(0); val y0 = event.getY(0)
+        val x1 = event.getX(1); val y1 = event.getY(1)
+
+        val curMidX = (x0 + x1) / 2f
+        val curMidY = (y0 + y1) / 2f
+
+        val panDx = curMidX - multiTouchStartMid.first
+        val panDy = curMidY - multiTouchStartMid.second
+
+        var vp = CanvasViewport(
+            zoom = multiTouchStartZoom,
+            panX = multiTouchStartPanX - panDx / multiTouchStartZoom,
+            panY = multiTouchStartPanY - panDy / multiTouchStartZoom,
+            zoomLocked = viewModel.viewport.value.zoomLocked,
+        )
+
+        val curDist = sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0))
+        if (multiTouchStartDist > 0f) {
+            val zoomFactor = curDist / multiTouchStartDist
+            vp = vp.zoomAt(zoomFactor, Offset(curMidX, curMidY))
+        }
+
+        viewModel.setViewport(vp)
+    }
+
+    private fun finishMultiTouch(event: MotionEvent) {
+        isMultiTouch = false
+
+        val pc = event.pointerCount
+        val cx = if (pc >= 2) (event.getX(0) + event.getX(1)) / 2f else event.getX(0)
+        val cy = if (pc >= 2) (event.getY(0) + event.getY(1)) / 2f else event.getY(0)
+        val dx = cx - twoFingerStartX
+        val dy = cy - twoFingerStartY
+        val moved = sqrt(dx * dx + dy * dy)
+        val duration = event.eventTime - twoFingerDownTime
+
+        Log.d(TAG, "  → multi-touch ended: duration=${duration}ms moved=${moved.toInt()}px tapCount=$twoFingerTapCount")
+
+        if (duration < 200 && moved < 20f) {
+            val now = event.eventTime
+            if (now - lastTwoFingerTapTime < 400) {
+                twoFingerTapCount++
+            } else {
+                twoFingerTapCount = 1
+            }
+            lastTwoFingerTapTime = now
+
+            val zoomLocked = viewModel.viewport.value.zoomLocked
+
+            when (twoFingerTapCount) {
+                2 -> {
+                    if (zoomLocked) {
+                        Log.d(TAG, "  → double-tap ignored (zoom locked)")
+                    } else {
+                        Log.d(TAG, "  → double-tap detected → reset viewport to center")
+                        viewModel.resetViewport(Offset(viewWidth / 2f, viewHeight / 2f))
+                    }
+                }
+                3 -> {
+                    Log.d(TAG, "  → triple-tap detected → reset to origin")
+                    val vp = if (zoomLocked)
+                        CanvasViewport(zoom = viewModel.viewport.value.zoom, zoomLocked = true)
+                    else
+                        CanvasViewport()
+                    viewModel.setViewport(vp)
+                    twoFingerTapCount = 0
+                }
+            }
+        } else {
+            if (twoFingerTapCount > 0) Log.d(TAG, "  → tap sequence broken (moved=${moved.toInt()}px or duration=${duration}ms)")
+            lastTwoFingerTapTime = 0L
+            twoFingerTapCount = 0
+        }
+    }
+
+    // ── Stylus detection ─────────────────────────────────────────
+
+    private fun detectStrokeModifier(event: MotionEvent, pointerIndex: Int = 0): StrokeModifier {
+        if (event.getToolType(pointerIndex) != MotionEvent.TOOL_TYPE_STYLUS) return StrokeModifier.None
+        val b = event.buttonState
+        val primary = (b and MotionEvent.BUTTON_STYLUS_PRIMARY) != 0
+        val secondary = (b and MotionEvent.BUTTON_STYLUS_SECONDARY) != 0
+        return when {
+            primary && secondary -> StrokeModifier.Both
+            primary -> StrokeModifier.PrimaryButton
+            secondary -> StrokeModifier.SecondaryButton
+            else -> StrokeModifier.None
+        }
+    }
+}

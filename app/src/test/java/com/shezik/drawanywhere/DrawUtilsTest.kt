@@ -64,4 +64,25 @@ class DrawUtilsTest {
         // distance from (1,1) to (3,4) = sqrt((2)^2+(3)^2) = sqrt(13)
         assertEquals(3.6055f, dist, 0.01f)
     }
+
+    @Test
+    fun hitTestRectEdge_topEdgeHit() {
+        assertTrue(hitTestRectEdge(
+            Offset(50f, 10f), 10f, 10f, 100f, 100f, threshold = 10f
+        ))
+    }
+
+    @Test
+    fun hitTestRectEdge_missesInterior() {
+        assertFalse(hitTestRectEdge(
+            Offset(55f, 55f), 10f, 10f, 100f, 100f, threshold = 5f
+        ))
+    }
+
+    @Test
+    fun hitTestRectEdge_missesFarAway() {
+        assertFalse(hitTestRectEdge(
+            Offset(200f, 200f), 10f, 10f, 100f, 100f, threshold = 10f
+        ))
+    }
 }

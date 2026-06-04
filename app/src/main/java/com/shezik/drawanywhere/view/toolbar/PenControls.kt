@@ -10,12 +10,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.model.PenConfig
+import com.shezik.drawanywhere.model.PenType
 
 @Composable
 fun PenControls(
     penConfig: PenConfig,
     onStrokeWidthChange: (Float) -> Unit,
-    onAlphaChange: (Float) -> Unit
+    onAlphaChange: (Float) -> Unit,
+    showAlpha: Boolean = true,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
@@ -31,13 +33,15 @@ fun PenControls(
             onValueChange = onStrokeWidthChange,
             valueDisplay = { "${it.toInt()}px" }
         )
-        SliderControl(
-            label = stringResource(R.string.opacity),
-            value = penConfig.alpha,
-            valueRange = 0.1f..1f,
-            onValueChange = onAlphaChange,
-            valueDisplay = { "${(it * 100).toInt()}%" }
-        )
+        if (showAlpha) {
+            SliderControl(
+                label = stringResource(R.string.opacity),
+                value = penConfig.alpha,
+                valueRange = 0.1f..1f,
+                onValueChange = onAlphaChange,
+                valueDisplay = { "${(it * 100).toInt()}%" }
+            )
+        }
     }
 }
 

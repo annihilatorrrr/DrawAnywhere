@@ -23,12 +23,16 @@ fun PenTypeSelector(
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface
         )
-        val penTypes = listOf(
-            PenType.Pen to stringResource(R.string.pen),
-            PenType.Rectangle to stringResource(R.string.rectangle),
-            PenType.Ellipse to stringResource(R.string.ellipse),
-            PenType.StrokeEraser to stringResource(R.string.stroke_eraser)
-        )
+        val penTypes = PenType.entries.map { type ->
+            type to stringResource(
+                when (type) {
+                    PenType.Pen -> R.string.pen
+                    PenType.Rectangle -> R.string.rectangle
+                    PenType.Ellipse -> R.string.ellipse
+                    PenType.StrokeEraser -> R.string.stroke_eraser
+                }
+            )
+        }
         penTypes.forEach { (penType, label) ->
             val isSelected = currentPenType == penType
             val bg = if (isSelected) MaterialTheme.colorScheme.primaryContainer

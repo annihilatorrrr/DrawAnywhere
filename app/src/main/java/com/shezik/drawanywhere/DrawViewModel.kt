@@ -70,9 +70,9 @@ data class UiState(
 
 fun defaultPenConfigs(): Map<PenType, PenConfig> = mapOf(
     PenType.Pen to PenConfig(penType = PenType.Pen),
-    PenType.Rectangle to PenConfig(penType = PenType.Rectangle, width = 5f),
-    PenType.Ellipse to PenConfig(penType = PenType.Ellipse, width = 5f),
-    PenType.StrokeEraser to PenConfig(penType = PenType.StrokeEraser, width = 50f)
+    PenType.Rectangle to PenConfig(penType = PenType.Rectangle),
+    PenType.Ellipse to PenConfig(penType = PenType.Ellipse),
+    PenType.StrokeEraser to PenConfig(penType = PenType.StrokeEraser, width = 50f, color = Color.LightGray),
 )
 
 @OptIn(FlowPreview::class)

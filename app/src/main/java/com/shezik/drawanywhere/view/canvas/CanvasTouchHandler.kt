@@ -26,12 +26,13 @@ import com.shezik.drawanywhere.model.StrokeModifier
 import kotlin.math.sqrt
 
 /**
- * Touch dispatch for the drawing canvas. Routes [MotionEvent] into one of:
+ * Touch dispatch for the drawing canvas. Routes [MotionEvent] into:
  *
  * ① **Multi-touch** — pan/zoom (2-finger) and tap gestures (2+, see [tapGestures]).
  *    Three+ fingers suppress pan/zoom; only tap detection runs.
  * ② **Multi-touch entry** — second finger PTR_DOWN.
  * ③ **Single-pointer** — finger (debounced) or stylus (immediate).
+ * ④ **Hover** — stylus/mouse hover tracks pointer position for size preview.
  *
  * Drawing, viewport manipulation, and gesture actions are delegated to
  * [viewModel] and callbacks. This class owns only the touch routing and
@@ -70,8 +71,8 @@ class CanvasTouchHandler(
 
     companion object {
         private const val FINGER_DEBOUNCE_MS = 50L
-        private const val TAP_MAX_DURATION_MS = 200L
-        private const val TAP_MAX_MOVEMENT_PX = 20f
+        private const val TAP_MAX_DURATION_MS = 300L
+        private const val TAP_MAX_MOVEMENT_PX = 40f
         private const val TAP_INTERVAL_MS = 150L
     }
 
@@ -105,7 +106,7 @@ class CanvasTouchHandler(
         var pendingDoubleTap: Runnable? = null
     }
 
-    /** Append entries for 4-, 5-finger gestures as needed. */
+    /** Gesture detectors for multi-finger taps (currently 2- and 3-finger). */
     private val tapGestures: Map<Int, TapGesture> = mapOf(
         2 to TapGesture(onTwoFingerDoubleTap, onTwoFingerTripleTap, twoFingerDoubleTapDelayMs),
         3 to TapGesture(onThreeFingerDoubleTap, onThreeFingerTripleTap, threeFingerDoubleTapDelayMs),
@@ -151,7 +152,28 @@ class CanvasTouchHandler(
     //  Public entry point
     // ═══════════════════════════════════════════════════════════════
 
+    /** Current pointer position for size preview; null when not hovering. */
+    var hoverPoint: Offset? = null
+        private set
+
     fun handleEvent(event: MotionEvent): Boolean {
+        // Track pointer position for size preview (stylus/mouse only)
+        when (event.actionMasked) {
+            MotionEvent.ACTION_MOVE -> {
+                if (event.pointerCount == 1 && event.getToolType(0) != MotionEvent.TOOL_TYPE_FINGER) {
+                    hoverPoint = Offset(event.x, event.y)
+                }
+            }
+            MotionEvent.ACTION_HOVER_MOVE -> {
+                hoverPoint = Offset(event.x, event.y)
+                onInvalidate()
+            }
+            MotionEvent.ACTION_HOVER_EXIT -> {
+                hoverPoint = null
+                onInvalidate()
+            }
+        }
+
         if (event.actionMasked != MotionEvent.ACTION_MOVE || event.pointerCount >= 2) {
             logPointers(event, eventActionName(event.actionMasked))
         }

@@ -13,13 +13,15 @@ data class ObjectTransform(
 
 sealed class DrawObject {
     data class Stroke(
-        val points: MutableList<Offset>,
+        internal val _points: MutableList<Offset> = mutableListOf(),
         val color: Color,
         val width: Float,
         val alpha: Float,
         val penType: PenType = PenType.Pen,
         val transform: ObjectTransform = ObjectTransform(),
-    ) : DrawObject()
+    ) : DrawObject() {
+        val points: List<Offset> get() = _points
+    }
 }
 
 sealed class DrawAction {

@@ -59,8 +59,8 @@ class DrawController(initialConfig: PenConfig) {
         }
         _strokeList.lastOrNull()?.let { stroke ->
             when (stroke.penType) {
-                PenType.Rectangle, PenType.Ellipse -> stroke.points[1] = newPoint
-                else -> stroke.points.add(newPoint)
+                PenType.Rectangle, PenType.Ellipse -> stroke._points[1] = newPoint
+                else -> stroke._points.add(newPoint)
             }
         }
     }
@@ -75,7 +75,7 @@ class DrawController(initialConfig: PenConfig) {
             else -> mutableListOf(newPoint)
         }
         _strokeList.add(DrawObject.Stroke(
-            points = points,
+            _points = points,
             color = penConfig.color,
             width = penConfig.width,
             alpha = penConfig.alpha,
@@ -97,8 +97,8 @@ class DrawController(initialConfig: PenConfig) {
                 _strokeList.removeAt(_strokeList.lastIndex)
                 return
             }
-            latest.points[0] = Offset(left, top)
-            latest.points[1] = Offset(right, bottom)
+            latest._points[0] = Offset(left, top)
+            latest._points[1] = Offset(right, bottom)
         } else {
             if (latest.points.isEmpty()) {
                 _strokeList.removeAt(_strokeList.lastIndex)

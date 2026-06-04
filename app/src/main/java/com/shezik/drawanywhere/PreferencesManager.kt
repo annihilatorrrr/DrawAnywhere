@@ -78,14 +78,18 @@ class PreferencesManager(private val context: Context) {
             val width = preferences[PreferencesKeys.penWidthKey(penType)]
             val alpha = preferences[PreferencesKeys.penAlphaKey(penType)]
 
-            if (color != null || width != null || alpha != null) {
+            val defaultConfig = defaultUiState.penConfigs[penType] ?: PenConfig(penType = penType)
+            if (penType == PenType.StrokeEraser) {
+                // Eraser has no visual appearance — always use default color/alpha
+                if (width != null) {
+                    penConfigs[penType] = defaultConfig.copy(width = width)
+                }
+            } else if (color != null || width != null || alpha != null) {
                 penConfigs[penType] = PenConfig(
                     penType = penType,
-                    // Should never reach Color.Red, unless defaultPenConfigs is not elaborate
-                    color = color?.let { Color(it) } ?: penConfigs[penType]?.color ?: Color.Red,
-                    // We don't have common default values for the two below
-                    width = width ?: penConfigs[penType]?.width ?: 10f,
-                    alpha = alpha ?: penConfigs[penType]?.alpha ?: 1f
+                    color = color?.let { Color(it) } ?: defaultConfig.color,
+                    width = width ?: defaultConfig.width,
+                    alpha = alpha ?: defaultConfig.alpha
                 )
             }
         }
@@ -118,9 +122,11 @@ class PreferencesManager(private val context: Context) {
 
             // Save each pen's configuration
             for ((penType, config) in uiState.penConfigs) {
-                preferences[PreferencesKeys.penColorKey(penType)] = config.color.toArgb()
+                if (penType != PenType.StrokeEraser) {
+                    preferences[PreferencesKeys.penColorKey(penType)] = config.color.toArgb()
+                    preferences[PreferencesKeys.penAlphaKey(penType)] = config.alpha
+                }
                 preferences[PreferencesKeys.penWidthKey(penType)] = config.width
-                preferences[PreferencesKeys.penAlphaKey(penType)] = config.alpha
             }
         }
     }

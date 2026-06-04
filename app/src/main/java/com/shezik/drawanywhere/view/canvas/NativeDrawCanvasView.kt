@@ -65,6 +65,14 @@ class NativeDrawCanvasView(
     override fun onTouchEvent(event: MotionEvent): Boolean =
         touchHandler.handleEvent(event)
 
+    // ── Hover (stylus/mouse size preview) ──────────────────────
+
+    override fun onHoverEvent(event: MotionEvent): Boolean =
+        touchHandler.handleEvent(event)
+
+    override fun onGenericMotionEvent(event: MotionEvent): Boolean =
+        touchHandler.handleEvent(event)
+
     // ── Rendering ─────────────────────────────────────────────────
 
     private val pathPaint = Paint().apply {
@@ -79,6 +87,12 @@ class NativeDrawCanvasView(
         textSize = 18f * context.resources.displayMetrics.density
         isAntiAlias = true
         setShadowLayer(4f, 0f, 1f, 0x88000000.toInt())
+    }
+
+    private val hoverPaint = Paint().apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+        isAntiAlias = true
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -100,14 +114,16 @@ class NativeDrawCanvasView(
             pathPaint.color = (colorArgb and 0x00FFFFFF) or (combinedAlpha shl 24)
 
             when (stroke.penType) {
-                PenType.Rectangle -> {
+                PenType.Rectangle, PenType.Ellipse -> {
+                    if (stroke.points.size < 2) continue
                     val p0 = stroke.points[0]; val p1 = stroke.points[1]
-                    canvas.drawRect(p0.x, p0.y, p1.x, p1.y, pathPaint)
-                }
-                PenType.Ellipse -> {
-                    val p0 = stroke.points[0]; val p1 = stroke.points[1]
-                    val rect = RectF(p0.x, p0.y, p1.x, p1.y)
-                    canvas.drawOval(rect, pathPaint)
+                    val left = minOf(p0.x, p1.x); val top = minOf(p0.y, p1.y)
+                    val right = maxOf(p0.x, p1.x); val bottom = maxOf(p0.y, p1.y)
+                    if (stroke.penType == PenType.Rectangle) {
+                        canvas.drawRect(left, top, right, bottom, pathPaint)
+                    } else {
+                        canvas.drawOval(RectF(left, top, right, bottom), pathPaint)
+                    }
                 }
                 else -> {
                     val androidPath = buildAndroidPath(stroke.points)
@@ -116,6 +132,14 @@ class NativeDrawCanvasView(
             }
         }
         canvas.restore()
+
+        // ── Hover size preview (screen space, constant border) ────
+        touchHandler.hoverPoint?.let { pt ->
+            val config = viewModel.uiState.value.currentPenConfig
+            hoverPaint.color = config.color.toArgb()
+            val screenR = (config.width * vp.zoom - hoverPaint.strokeWidth) / 2f
+            if (screenR > 0f) canvas.drawCircle(pt.x, pt.y, screenR, hoverPaint)
+        }
 
         // ── Zoom HUD ─────────────────────────────────────────────
         val zoomPct = (vp.zoom * 100).toInt()

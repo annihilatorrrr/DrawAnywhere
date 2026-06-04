@@ -12,7 +12,7 @@ import org.junit.Test
 class UndoRedoManagerTest {
 
     private fun newStroke() = DrawObject.Stroke(
-        points = mutableListOf(Offset(0f, 0f)),
+        _points = mutableListOf(Offset(0f, 0f)),
         color = Color.Red, width = 5f, alpha = 1f
     )
 

@@ -15,7 +15,7 @@ class DrawControllerTest {
     private fun newController() = DrawController(PenConfig())
 
     private fun newStroke() = DrawObject.Stroke(
-        points = mutableListOf(Offset(0f, 0f)),
+        _points = mutableListOf(Offset(0f, 0f)),
         color = Color.Red,
         width = 5f,
         alpha = 1f
@@ -56,7 +56,7 @@ class DrawControllerTest {
     fun emptyStrokeRemovedOnFinish() {
         val c = newController()
         c.createStroke(Offset(0f, 0f))
-        c.strokeList[0].points.clear()
+        c.strokeList[0]._points.clear()
         c.finishStroke()
         assertEquals(0, c.strokeList.size)
     }
@@ -210,6 +210,89 @@ class DrawControllerTest {
         c.onPathsChanged = { fired = true }
         c.undo()
         assertTrue(fired)
+    }
+
+    // ── Rectangle / Ellipse shape tests ─────────────────────────
+
+    @Test
+    fun rectangleCreateStrokeHasTwoPoints() {
+        val c = DrawController(PenConfig(penType = PenType.Rectangle, width = 5f))
+        c.createStroke(Offset(10f, 20f))
+        assertEquals(1, c.strokeList.size)
+        assertEquals(2, c.strokeList[0].points.size)
+        assertEquals(PenType.Rectangle, c.strokeList[0].penType)
+    }
+
+    @Test
+    fun rectangleUpdateReplacesSecondPoint() {
+        val c = DrawController(PenConfig(penType = PenType.Rectangle, width = 5f))
+        c.createStroke(Offset(10f, 20f))
+        c.updateLatestStroke(Offset(100f, 200f))
+        val pts = c.strokeList[0].points
+        assertEquals(2, pts.size)
+        assertEquals(Offset(10f, 20f), pts[0])
+        assertEquals(Offset(100f, 200f), pts[1])
+    }
+
+    @Test
+    fun rectangleFinishNormalizesReverseDrag() {
+        val c = DrawController(PenConfig(penType = PenType.Rectangle, width = 5f))
+        c.createStroke(Offset(100f, 100f))
+        c.updateLatestStroke(Offset(50f, 30f))
+        c.finishStroke()
+        val pts = c.strokeList[0].points
+        assertEquals(Offset(50f, 30f), pts[0])
+        assertEquals(Offset(100f, 100f), pts[1])
+    }
+
+    @Test
+    fun rectangleDiscardsTooSmall() {
+        val c = DrawController(PenConfig(penType = PenType.Rectangle, width = 5f))
+        c.createStroke(Offset(10f, 10f))
+        c.updateLatestStroke(Offset(11f, 11f))
+        c.finishStroke()
+        assertEquals(0, c.strokeList.size)
+    }
+
+    @Test
+    fun rectangleFinishPushesToUndo() = runTest {
+        val c = DrawController(PenConfig(penType = PenType.Rectangle, width = 5f))
+        c.createStroke(Offset(10f, 10f))
+        c.updateLatestStroke(Offset(100f, 100f))
+        c.finishStroke()
+        assertTrue(c.canUndo.first())
+    }
+
+    @Test
+    fun eraseRectangleEdgeHitRemovesShape() {
+        val c = DrawController(PenConfig(penType = PenType.Rectangle, width = 5f))
+        c.createStroke(Offset(10f, 10f))
+        c.updateLatestStroke(Offset(100f, 100f))
+        c.finishStroke()
+        assertEquals(1, c.strokeList.size)
+
+        c.setPenConfig(PenConfig(penType = PenType.StrokeEraser, width = 20f))
+        c.createStroke(Offset(55f, 10f))
+        assertEquals(0, c.strokeList.size)
+    }
+
+    @Test
+    fun eraseRectangleMissesInterior() {
+        val c = DrawController(PenConfig(penType = PenType.Rectangle, width = 5f))
+        c.createStroke(Offset(10f, 10f))
+        c.updateLatestStroke(Offset(100f, 100f))
+        c.finishStroke()
+
+        c.setPenConfig(PenConfig(penType = PenType.StrokeEraser, width = 10f))
+        c.createStroke(Offset(55f, 55f))
+        assertEquals(1, c.strokeList.size)
+    }
+
+    @Test
+    fun ellipseCreateStrokeHasCorrectPenType() {
+        val c = DrawController(PenConfig(penType = PenType.Ellipse, width = 5f))
+        c.createStroke(Offset(10f, 10f))
+        assertEquals(PenType.Ellipse, c.strokeList[0].penType)
     }
 
     @Test

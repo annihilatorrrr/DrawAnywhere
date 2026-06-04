@@ -52,7 +52,7 @@ class TapGestureDetector(
     var maxPointerCount: Int = 0
         private set
 
-    private inner class State(val doubleTapDelayMs: Long) {
+    private class State(val doubleTapDelayMs: Long) {
         var tapCount: Int = 0
         var lastTapTime: Long = 0L
         var downTime: Long = 0L

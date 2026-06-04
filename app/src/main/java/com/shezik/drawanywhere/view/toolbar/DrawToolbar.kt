@@ -79,7 +79,6 @@ fun DrawToolbar(
                     .horizontalScroll(hScrollState)
                     .verticalScroll(vScrollState)
                     .padding(Spacing.xs),
-                uiState = uiState,
                 haptics = haptics,
                 onPositionChange = viewModel::updateToolbarPosition,
                 onPositionSaved = viewModel::saveToolbarPosition,

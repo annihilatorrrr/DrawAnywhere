@@ -13,12 +13,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.shezik.drawanywhere.UiState
 
 @Composable
 fun DraggableToolbarCard(
     modifier: Modifier = Modifier,
-    uiState: UiState,
     haptics: HapticFeedback,
     onPositionChange: (Offset) -> Unit,
     onPositionSaved: () -> Unit,

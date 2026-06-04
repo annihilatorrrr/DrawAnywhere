@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import com.shezik.drawanywhere.view.toolbar.InkEraser24Px
 import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.UiState
 import com.shezik.drawanywhere.model.PenType

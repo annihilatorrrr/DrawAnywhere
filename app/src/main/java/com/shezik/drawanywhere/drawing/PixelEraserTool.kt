@@ -71,15 +71,15 @@ class PixelEraserTool(private val ctx: ToolContext) : StrokeTool {
             for (j in pts.indices) {
                 if (keep[j]) {
                     if (seg == null) seg = mutableListOf()
-                    seg!!.add(pts[j])
+                    seg.add(pts[j])
                 } else {
-                    if (seg != null && seg!!.isNotEmpty()) {
-                        segments.add(seg!!)
+                    if (!seg.isNullOrEmpty()) {
+                        segments.add(seg)
                         seg = null
                     }
                 }
             }
-            if (seg != null && seg!!.isNotEmpty()) segments.add(seg!!)
+            if (!seg.isNullOrEmpty()) segments.add(seg)
 
             strokes.removeAt(i)
             for (segPts in segments.reversed()) {

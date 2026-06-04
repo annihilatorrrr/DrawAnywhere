@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.shezik.drawanywhere.BuildConfig
 import com.shezik.drawanywhere.R
+import com.shezik.drawanywhere.ui.theme.Spacing
 
 @Composable
 fun ToolbarControls(
@@ -29,7 +30,7 @@ fun ToolbarControls(
     onChangeFingerDrawingEnabled: (Boolean) -> Unit,
     onQuitApplication: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         Text(
             text = stringResource(R.string.settings),
             style = MaterialTheme.typography.labelMedium,
@@ -50,7 +51,7 @@ fun ToolbarControls(
                 onClick = { onChangeOrientation(orientation) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = bg, contentColor = fg),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(Spacing.sm)
             ) { Text(text = label, style = MaterialTheme.typography.bodyMedium) }
         }
         CheckboxControl(
@@ -82,11 +83,11 @@ fun ToolbarControls(
 
 @Composable
 internal fun AboutScreen() {
-    Box(modifier = Modifier.padding(12.dp)) {
+    Box(modifier = Modifier.padding(Spacing.md)) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs)
         ) {
             Image(
                 painter = painterResource(id = R.drawable.app_icon),
@@ -106,7 +107,7 @@ internal fun AboutScreen() {
                 fontWeight = FontWeight.ExtraLight,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(Spacing.xl))
             Text(
                 text = stringResource(R.string.copyright),
                 style = MaterialTheme.typography.bodySmall,
@@ -114,7 +115,7 @@ internal fun AboutScreen() {
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.sm))
             Text(
                 text = stringResource(R.string.licenses),
                 style = MaterialTheme.typography.bodySmall,
@@ -134,12 +135,12 @@ fun CheckboxControl(
     description: String? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             horizontalAlignment = Alignment.Start
         ) {
             Text(

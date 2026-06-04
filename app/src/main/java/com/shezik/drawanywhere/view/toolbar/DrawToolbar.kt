@@ -1,6 +1,5 @@
 package com.shezik.drawanywhere.view.toolbar
 
-import android.annotation.SuppressLint
 import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -26,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import com.shezik.drawanywhere.DrawViewModel
 import com.shezik.drawanywhere.scrollFadingEdges
 import com.shezik.drawanywhere.ui.theme.DrawAnywhereTheme
+import com.shezik.drawanywhere.ui.theme.Spacing
 
-@SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun DrawToolbar(
     viewModel: DrawViewModel,
@@ -79,7 +78,7 @@ fun DrawToolbar(
                     .scrollFadingEdges(vScrollState, true)
                     .horizontalScroll(hScrollState)
                     .verticalScroll(vScrollState)
-                    .padding(4.dp),
+                    .padding(Spacing.xs),
                 uiState = uiState,
                 haptics = haptics,
                 onPositionChange = viewModel::updateToolbarPosition,
@@ -87,7 +86,7 @@ fun DrawToolbar(
                 onToolbarInteracted = viewModel::resetToolbarTimer
             ) {
                 ToolbarButtonsContainer(
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.padding(Spacing.sm),
                     uiState = uiState,
                     allButtonsMap = allButtonsMap,
                     onExpandToggleClick = viewModel::toggleSecondDrawer
@@ -114,7 +113,7 @@ fun ToolbarButtonsContainer(
     val standaloneButtonIds = allButtonsMap.keys.filter {
         it !in firstDrawerButtonIds && it !in secondDrawerButtonIds
     }
-    val arrangement = Arrangement.spacedBy(8.dp)
+    val arrangement = Arrangement.spacedBy(Spacing.sm)
     val popupAlignment = when (orientation) {
         ToolbarOrientation.HORIZONTAL -> Alignment.TopCenter
         ToolbarOrientation.VERTICAL -> Alignment.CenterEnd
@@ -141,10 +140,10 @@ fun ToolbarButtonsContainer(
         }
         AnimatedVisibility(isDividerVisible, enter = fadeIn(tween(300)), exit = fadeOut(tween(300))) {
             if (isHorizontal) VerticalDivider(
-                Modifier.height(24.dp).padding(horizontal = 8.dp), thickness = 2.dp,
+                Modifier.height(24.dp).padding(horizontal = Spacing.sm), thickness = 2.dp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
             else HorizontalDivider(
-                Modifier.width(24.dp).padding(vertical = 8.dp), thickness = 2.dp,
+                Modifier.width(24.dp).padding(vertical = Spacing.sm), thickness = 2.dp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
         }
         secondDrawerButtonIds.forEach { id ->

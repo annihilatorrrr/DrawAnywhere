@@ -1,6 +1,5 @@
 package com.shezik.drawanywhere.view.toolbar
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shezik.drawanywhere.R
+import com.shezik.drawanywhere.ui.theme.Spacing
 import com.godaddy.android.colorpicker.HsvColor
 import com.godaddy.android.colorpicker.harmony.ColorHarmonyMode
 import com.godaddy.android.colorpicker.harmony.HarmonyColorPicker
@@ -79,7 +79,7 @@ fun ColorPicker(
 ) {
     val pagerState = rememberPagerState(initialPage = 0) { 2 }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         HorizontalPager(state = pagerState, verticalAlignment = Alignment.Top) { page ->
             when (page) {
                 0 -> PresetsPage(selectedColor, onPresetSelected, onColorSelected, recentColors)
@@ -112,7 +112,7 @@ private fun PresetsPage(
     onRecentSelected: (Color) -> Unit,
     recentColors: List<Color>,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         // ── Presets ────────────────────────────────────────────
         Text(
             text = stringResource(R.string.color),
@@ -121,9 +121,9 @@ private fun PresetsPage(
             color = MaterialTheme.colorScheme.onSurface
         )
         val presets = remember { PRESET_COLORS }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             presets.chunked(6).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.xs, Alignment.CenterHorizontally)) {
                     row.forEach { c ->
                         ColorSwatchButton(c, c.toArgb() == selectedColor.toArgb()) { onPresetSelected(c) }
                     }
@@ -139,9 +139,11 @@ private fun PresetsPage(
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.xs, Alignment.CenterHorizontally)) {
                 recentColors.take(6).forEach { c ->
-                    ColorSwatchButton(c, c.toArgb() == selectedColor.toArgb()) { onRecentSelected(c) }
+                    key(c.toArgb()) {
+                        ColorSwatchButton(c, c.toArgb() == selectedColor.toArgb()) { onRecentSelected(c) }
+                    }
                 }
             }
         }
@@ -153,7 +155,7 @@ private fun HsvPage(selectedColor: Color, onColorSelected: (Color) -> Unit) {
     Column {
         SectionLabel(
             stringResource(R.string.hsv),
-            modifier = Modifier.padding(bottom = 8.dp),
+            modifier = Modifier.padding(bottom = Spacing.sm),
         )
         val initial = remember(selectedColor) { HsvColor.from(selectedColor) }
         var h by remember(selectedColor) { mutableFloatStateOf(initial.hue) }
@@ -169,9 +171,9 @@ private fun HsvPage(selectedColor: Color, onColorSelected: (Color) -> Unit) {
         }
 
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
         ) {
             Box(
                 Modifier.size(28.dp).clip(CircleShape).background(previewColor)
@@ -211,15 +213,15 @@ private fun HsvPage(selectedColor: Color, onColorSelected: (Color) -> Unit) {
         )
 
         HslSlider("H", h, 0f..360f, { h = it }, { "${it.toInt()}°" })
-        HslSlider("S", s, 0f..1f, { s = it }, { "${(it * 100).toInt()}%" }, modifier = Modifier.padding(top = 8.dp))
-        HslSlider("V", v, 0f..1f, { v = it }, { "${(it * 100).toInt()}%" }, modifier = Modifier.padding(top = 8.dp))
+        HslSlider("S", s, 0f..1f, { s = it }, { "${(it * 100).toInt()}%" }, modifier = Modifier.padding(top = Spacing.sm))
+        HslSlider("V", v, 0f..1f, { v = it }, { "${(it * 100).toInt()}%" }, modifier = Modifier.padding(top = Spacing.sm))
 
         val contrastColor = Color(1f - previewColor.red, 1f - previewColor.green, 1f - previewColor.blue)
 
         Button(
             onClick = { onColorSelected(previewColor) },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm),
+            shape = RoundedCornerShape(Spacing.sm),
             colors = ButtonDefaults.buttonColors(containerColor = previewColor, contentColor = contrastColor)
         ) {
             Text(stringResource(R.string.apply_color))

@@ -10,13 +10,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.model.PenType
+import com.shezik.drawanywhere.ui.theme.Spacing
 
 @Composable
 fun PenTypeSelector(
     currentPenType: PenType,
     onPenTypeSwitch: (PenType) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy((-1).dp)) {
         Text(
             text = stringResource(R.string.tools),
             style = MaterialTheme.typography.labelMedium,
@@ -36,7 +37,7 @@ fun PenTypeSelector(
                 onClick = { onPenTypeSwitch(penType) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = bg, contentColor = fg),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(Spacing.sm)
             ) { Text(text = label, style = MaterialTheme.typography.bodyMedium) }
         }
     }

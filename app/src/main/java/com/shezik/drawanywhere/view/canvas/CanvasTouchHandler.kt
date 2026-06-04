@@ -67,9 +67,7 @@ class CanvasTouchHandler(
     private var pendingModifier: StrokeModifier = StrokeModifier.None
     private val pendingMovePoints = mutableListOf<Offset>()
     private var downTimeMs: Long = 0L
-    companion object {
-        private const val FINGER_DEBOUNCE_MS = 50L
-    }
+    private val fingerDebounceMs: Long = 50L
 
     // ═══════════════════════════════════════════════════════════════
     //  Multi-touch state
@@ -294,7 +292,7 @@ class CanvasTouchHandler(
                 Log.d(TAG, "  → finger DOWN: ignored (finger drawing disabled)")
                 return
             }
-            Log.d(TAG, "  → finger DOWN: pending (debounce=${FINGER_DEBOUNCE_MS}ms)")
+            Log.d(TAG, "  → finger DOWN: pending (debounce=${fingerDebounceMs}ms)")
             pendingMovePoints.clear()
             pendingMovePoints.add(worldPt)
             strokePending = true
@@ -304,7 +302,7 @@ class CanvasTouchHandler(
     private fun onPointerMove(event: MotionEvent, vp: CanvasViewport) {
         if (strokePending) {
             accumulatePendingPoints(event, vp)
-            if (event.eventTime - downTimeMs < FINGER_DEBOUNCE_MS) return
+            if (event.eventTime - downTimeMs < fingerDebounceMs) return
             flushPendingStroke(event.eventTime)
             onInvalidate()
             return

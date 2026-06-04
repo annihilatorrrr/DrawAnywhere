@@ -13,7 +13,6 @@ import androidx.compose.ui.res.stringResource
 import com.shezik.drawanywhere.view.toolbar.InkEraser24Px
 import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.UiState
-import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 
 data class ToolbarButton(

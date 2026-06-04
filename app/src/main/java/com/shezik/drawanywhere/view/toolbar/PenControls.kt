@@ -10,7 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.model.PenConfig
-import com.shezik.drawanywhere.model.PenType
+import com.shezik.drawanywhere.ui.theme.Spacing
 
 @Composable
 fun PenControls(
@@ -19,7 +19,7 @@ fun PenControls(
     onAlphaChange: (Float) -> Unit,
     alphaEnabled: Boolean = true,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
         Text(
             text = stringResource(R.string.tool_controls),
             style = MaterialTheme.typography.labelMedium,
@@ -73,9 +73,9 @@ fun SliderControl(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(Spacing.xs))
         Slider(
-            modifier = Modifier.height(30.dp),
+            modifier = Modifier.height(18.dp),
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,

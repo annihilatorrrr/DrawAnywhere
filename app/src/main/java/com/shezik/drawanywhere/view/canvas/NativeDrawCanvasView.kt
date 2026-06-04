@@ -39,13 +39,25 @@ class NativeDrawCanvasView(
 
     // ── Touch input (delegated) ───────────────────────────────────
 
-    private val touchHandler = CanvasTouchHandler(viewModel) { invalidate() }
-
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        touchHandler.viewWidth = w
-        touchHandler.viewHeight = h
-    }
+    private val touchHandler = CanvasTouchHandler(
+        viewModel = viewModel,
+        onInvalidate = { invalidate() },
+        onTwoFingerDoubleTap = {
+            if (!viewModel.viewport.value.zoomLocked) {
+                viewModel.resetViewport(Offset(width / 2f, height / 2f))
+            }
+        },
+        onTwoFingerTripleTap = {
+            val zoomLocked = viewModel.viewport.value.zoomLocked
+            val vp = if (zoomLocked)
+                CanvasViewport(zoom = viewModel.viewport.value.zoom, zoomLocked = true)
+            else
+                CanvasViewport()
+            viewModel.setViewport(vp)
+        },
+        onThreeFingerDoubleTap = { viewModel.toggleCanvasPassthrough() },
+        onThreeFingerTripleTap = { viewModel.setCanvasVisibility(false) },
+    )
 
     override fun onTouchEvent(event: MotionEvent): Boolean =
         touchHandler.handleEvent(event)

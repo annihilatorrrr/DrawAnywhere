@@ -17,6 +17,8 @@ with this program. If not, see <https://www.gnu.org/licenses/>.
 package com.shezik.drawanywhere.view.canvas
 
 import android.util.Log
+import android.os.Handler
+import android.os.Looper
 import android.view.MotionEvent
 import androidx.compose.ui.geometry.Offset
 import com.shezik.drawanywhere.DrawViewModel
@@ -24,26 +26,43 @@ import com.shezik.drawanywhere.model.StrokeModifier
 import kotlin.math.sqrt
 
 /**
- * Pure touch-input state machine for the drawing canvas.
+ * Finger-count agnostic touch-input state machine.
  *
- * Responsibilities:
- * ① Route multi-touch (pan/zoom) events
- * ② Enter/exit multi-touch mode
- * ③ Single-pointer drawing (finger debounce, stylus instant)
+ * Dispatch: ① multi-touch active → ② enter multi-touch → ③ single-pointer
  *
- * Does NOT know about View, Canvas, or rendering — communicates
- * through [onInvalidate] and [viewModel].
+ * ① Multi-touch: pan/zoom on two-finger MOVE, tap detection on finger lift.
+ *    Three+ finger gestures suppress pan/zoom; only tap detection runs.
+ *    CANCEL / DOWN during multi-touch exits and restores viewport.
+ *
+ * ② Entry: second finger PTR_DOWN enters multi-touch, discarding any
+ *    pending single-pointer stroke.
+ *
+ * ③ Single-pointer: finger gets [FINGER_DEBOUNCE_MS] debounce (accumulates
+ *    MOVE points, flushes on expiry). Stylus starts instantly.
+ *    UP within debounce with accumulated points flushes a real stroke
+ *    (not just a dot).
+ *
+ * Tap gestures are reported via callbacks; actions are the caller's concern.
+ * Double-tap may be deferred ([doubleTapDelayMs] > 0) to avoid losing
+ * a subsequent triple-tap (critical for touch-stealing actions like passthrough).
+ *
+ * Add gestures for additional finger counts by appending to [tapGestures].
  */
 class CanvasTouchHandler(
     private val viewModel: DrawViewModel,
     private val onInvalidate: () -> Unit,
+    // Gesture callbacks — actions are decided by the caller
+    private val onTwoFingerDoubleTap: () -> Unit = {},
+    private val onTwoFingerTripleTap: () -> Unit = {},
+    private val onThreeFingerDoubleTap: () -> Unit = {},
+    private val onThreeFingerTripleTap: () -> Unit = {},
+    // Double-tap deferral: 0 = immediate, TAP_INTERVAL_MS = wait for triple-tap
+    private val twoFingerDoubleTapDelayMs: Long = 0L,
+    private val threeFingerDoubleTapDelayMs: Long = TAP_INTERVAL_MS,
 ) {
-    // Updated by the owning View on size changes
-    var viewWidth: Int = 0
-    var viewHeight: Int = 0
 
     // ═══════════════════════════════════════════════════════════════
-    //  Touch state
+    //  Drawing state
     // ═══════════════════════════════════════════════════════════════
 
     private val TAG = "DrawTouch"
@@ -57,6 +76,9 @@ class CanvasTouchHandler(
 
     companion object {
         private const val FINGER_DEBOUNCE_MS = 50L
+        private const val TAP_MAX_DURATION_MS = 200L
+        private const val TAP_MAX_MOVEMENT_PX = 20f
+        private const val TAP_INTERVAL_MS = 400L
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -64,6 +86,7 @@ class CanvasTouchHandler(
     // ═══════════════════════════════════════════════════════════════
 
     private var isMultiTouch: Boolean = false
+    private var maxPointerCount: Int = 0
     private var multiTouchStartDist: Float = 0f
     private var multiTouchStartMid: Pair<Float, Float> = 0f to 0f
     private var multiTouchStartPanX: Float = 0f
@@ -72,14 +95,29 @@ class CanvasTouchHandler(
     private var multiTouchStartZoomLocked: Boolean = false
 
     // ═══════════════════════════════════════════════════════════════
-    //  Double-tap detection
+    //  Tap detection (finger-count agnostic)
     // ═══════════════════════════════════════════════════════════════
 
-    private var lastTwoFingerTapTime: Long = 0L
-    private var twoFingerTapCount: Int = 0
-    private var twoFingerDownTime: Long = 0L
-    private var twoFingerStartX: Float = 0f
-    private var twoFingerStartY: Float = 0f
+    private val gestureAnchors = mutableMapOf<Int, Pair<Float, Float>>()
+
+    private inner class TapGesture(
+        val onDoubleTap: () -> Unit,
+        val onTripleTap: () -> Unit,
+        val doubleTapDelayMs: Long,
+    ) {
+        var tapCount: Int = 0
+        var lastTapTime: Long = 0L
+        var downTime: Long = 0L
+        var pendingDoubleTap: Runnable? = null
+    }
+
+    /** Append entries for 4-, 5-finger gestures as needed. */
+    private val tapGestures: Map<Int, TapGesture> = mapOf(
+        2 to TapGesture(onTwoFingerDoubleTap, onTwoFingerTripleTap, twoFingerDoubleTapDelayMs),
+        3 to TapGesture(onThreeFingerDoubleTap, onThreeFingerTripleTap, threeFingerDoubleTapDelayMs),
+    )
+
+    private val handler = Handler(Looper.getMainLooper())
 
     // ═══════════════════════════════════════════════════════════════
     //  Logging helpers
@@ -116,16 +154,15 @@ class CanvasTouchHandler(
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  Touch dispatch: ① multi-touch → ② enter → ③ single-pointer
+    //  Public entry point
     // ═══════════════════════════════════════════════════════════════
 
     fun handleEvent(event: MotionEvent): Boolean {
-        // Log every event except single-finger MOVE (too noisy)
         if (event.actionMasked != MotionEvent.ACTION_MOVE || event.pointerCount >= 2) {
             logPointers(event, eventActionName(event.actionMasked))
         }
 
-        // ① Multi-touch active → dispatch; return if consumed
+        // ① Multi-touch active → dispatch
         if (isMultiTouch && handleMultiTouchMode(event)) return true
 
         // ② Enter multi-touch on second finger
@@ -139,23 +176,36 @@ class CanvasTouchHandler(
         return true
     }
 
-    // ── ① Multi-touch mode dispatch ──────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    //  ① Multi-touch mode
+    // ═══════════════════════════════════════════════════════════════
 
     private fun handleMultiTouchMode(event: MotionEvent): Boolean {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                Log.d(TAG, "  → DOWN while in multi-touch: exiting (was interrupted)")
+                Log.d(TAG, "  → multi-touch interrupted by DOWN: exiting")
                 exitMultiTouch()
                 return false
             }
             MotionEvent.ACTION_CANCEL -> {
-                Log.d(TAG, "  → CANCEL while in multi-touch: abandoning")
+                Log.d(TAG, "  → multi-touch cancelled: exiting, viewport restored")
                 exitMultiTouch()
                 cancelAnyStroke()
                 return false
             }
             MotionEvent.ACTION_MOVE -> {
-                if (event.pointerCount >= 2) handleMultiTouchMove(event)
+                if (event.pointerCount >= 2 && maxPointerCount < 3) handleMultiTouchMove(event)
+            }
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                maxPointerCount = maxOf(maxPointerCount, event.pointerCount)
+                if (event.pointerCount >= 3) {
+                    tapGestures[event.pointerCount]?.downTime = event.eventTime
+                    gestureAnchors.clear()
+                    for (i in 0 until event.pointerCount) {
+                        gestureAnchors[event.getPointerId(i)] =
+                            event.getX(i) to event.getY(i)
+                    }
+                }
             }
             MotionEvent.ACTION_POINTER_UP -> {
                 if (event.pointerCount <= 2) finishMultiTouch(event)
@@ -190,19 +240,27 @@ class CanvasTouchHandler(
         strokePending = false
     }
 
-    // ── ② Enter multi-touch ──────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    //  ② Enter multi-touch
+    // ═══════════════════════════════════════════════════════════════
 
     private fun shouldEnterMultiTouch(event: MotionEvent): Boolean =
         event.actionMasked == MotionEvent.ACTION_POINTER_DOWN && event.pointerCount >= 2
 
     private fun enterMultiTouch(event: MotionEvent) {
-        Log.d(TAG, "  → entering multi-touch (2+ fingers, no stylus)")
+        Log.d(TAG, "  → multi-touch entered (${event.pointerCount} pointers)")
+        tapGestures.values.forEach { cancelPendingDoubleTap(it) }
         discardPendingStroke()
         cancelAnyStroke()
         isMultiTouch = true
-        twoFingerDownTime = event.eventTime
-        twoFingerStartX = (event.getX(0) + event.getX(1)) / 2f
-        twoFingerStartY = (event.getY(0) + event.getY(1)) / 2f
+        maxPointerCount = event.pointerCount
+        tapGestures.forEach { (count, state) ->
+            if (count <= event.pointerCount) state.downTime = event.eventTime
+        }
+        gestureAnchors.clear()
+        for (i in 0 until event.pointerCount) {
+            gestureAnchors[event.getPointerId(i)] = event.getX(i) to event.getY(i)
+        }
         startMultiTouch(event)
         onInvalidate()
     }
@@ -212,7 +270,9 @@ class CanvasTouchHandler(
         pendingMovePoints.clear()
     }
 
-    // ── ③ Single-pointer drawing ─────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    //  ③ Single-pointer drawing
+    // ═══════════════════════════════════════════════════════════════
 
     private fun handleSinglePointer(event: MotionEvent) {
         val vp = viewModel.viewport.value
@@ -225,6 +285,8 @@ class CanvasTouchHandler(
     }
 
     private fun onPointerDown(event: MotionEvent, vp: CanvasViewport) {
+        tapGestures.values.forEach { cancelPendingDoubleTap(it) }
+
         activePointerId = event.getPointerId(0)
         val toolType = event.getToolType(0)
         val isStylus = toolType == MotionEvent.TOOL_TYPE_STYLUS || toolType == MotionEvent.TOOL_TYPE_ERASER
@@ -233,7 +295,7 @@ class CanvasTouchHandler(
         val worldPt = vp.screenToWorld(Offset(event.x, event.y))
 
         if (isStylus) {
-            Log.d(TAG, "  → stylus DOWN: instant stroke, ptr=#$activePointerId mod=$pendingModifier")
+            Log.d(TAG, "  → stylus DOWN: stroke started (ptr=#$activePointerId, mod=$pendingModifier)")
             viewModel.startStroke(worldPt, pendingModifier)
             strokeInProgress = true
             strokePending = false
@@ -270,7 +332,7 @@ class CanvasTouchHandler(
     }
 
     private fun flushPendingStroke(eventTime: Long) {
-        Log.d(TAG, "  → debounce expired (${eventTime - downTimeMs}ms): flushing ${pendingMovePoints.size} pts")
+        Log.d(TAG, "  → debounce ended (${eventTime - downTimeMs}ms): flushing ${pendingMovePoints.size} pts")
         val start = pendingMovePoints.removeAt(0)
         viewModel.startStroke(start, pendingModifier)
         for (pt in pendingMovePoints) viewModel.updateStroke(pt)
@@ -294,19 +356,19 @@ class CanvasTouchHandler(
         val actionName = eventActionName(event.actionMasked)
         if (strokePending) {
             if (pendingMovePoints.size > 1) {
-                Log.d(TAG, "  → tap aborted: flushing ${pendingMovePoints.size} accumulated pts")
+                Log.d(TAG, "  → finger lifted before debounce: flushing ${pendingMovePoints.size} pts")
                 flushPendingStroke(event.eventTime)
                 viewModel.finishStroke()
                 strokeInProgress = false
             } else {
-                Log.d(TAG, "  → tap completed (dot)")
+                Log.d(TAG, "  → tap: single-point dot")
                 viewModel.startStroke(pendingMovePoints.first(), pendingModifier)
                 viewModel.finishStroke()
             }
             discardPendingStroke()
         }
         if (strokeInProgress) {
-            Log.d(TAG, "  → $actionName: finishing stroke, ptr=#$activePointerId")
+            Log.d(TAG, "  → $actionName: stroke finished (ptr=#$activePointerId)")
             strokeInProgress = false
             activePointerId = -1
             viewModel.finishStroke()
@@ -314,7 +376,9 @@ class CanvasTouchHandler(
         onInvalidate()
     }
 
-    // ── Multi-touch gesture helpers ───────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    //  Multi-touch gesture math
+    // ═══════════════════════════════════════════════════════════════
 
     private fun startMultiTouch(event: MotionEvent) {
         val x0 = event.getX(0); val y0 = event.getY(0)
@@ -355,57 +419,78 @@ class CanvasTouchHandler(
         viewModel.setViewport(vp)
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    //  Tap gesture detection (finger-count agnostic)
+    // ═══════════════════════════════════════════════════════════════
+
     private fun finishMultiTouch(event: MotionEvent) {
         isMultiTouch = false
 
-        val pc = event.pointerCount
-        val cx = if (pc >= 2) (event.getX(0) + event.getX(1)) / 2f else event.getX(0)
-        val cy = if (pc >= 2) (event.getY(0) + event.getY(1)) / 2f else event.getY(0)
-        val dx = cx - twoFingerStartX
-        val dy = cy - twoFingerStartY
-        val moved = sqrt(dx * dx + dy * dy)
-        val duration = event.eventTime - twoFingerDownTime
+        val moved = maxPointerMovement(event)
+        val state = tapGestures[maxPointerCount] ?: return
+        val duration = event.eventTime - state.downTime
+        finishTapGesture(state, duration, moved, event.eventTime)
+    }
 
-        Log.d(TAG, "  → multi-touch ended: duration=${duration}ms moved=${moved.toInt()}px tapCount=$twoFingerTapCount")
-
-        if (duration < 200 && moved < 20f) {
-            val now = event.eventTime
-            if (now - lastTwoFingerTapTime < 400) {
-                twoFingerTapCount++
+    private fun finishTapGesture(state: TapGesture, duration: Long, moved: Float, now: Long) {
+        if (duration < TAP_MAX_DURATION_MS && moved < TAP_MAX_MOVEMENT_PX) {
+            if (now - state.lastTapTime < TAP_INTERVAL_MS) {
+                state.tapCount++
             } else {
-                twoFingerTapCount = 1
+                state.tapCount = 1
             }
-            lastTwoFingerTapTime = now
+            state.lastTapTime = now
 
-            val zoomLocked = viewModel.viewport.value.zoomLocked
-
-            when (twoFingerTapCount) {
+            when (state.tapCount) {
                 2 -> {
-                    if (zoomLocked) {
-                        Log.d(TAG, "  → double-tap ignored (zoom locked)")
+                    state.pendingDoubleTap?.let { handler.removeCallbacks(it) }
+                    if (state.doubleTapDelayMs > 0L) {
+                        Log.d(TAG, "  → double-tap: deferred ${state.doubleTapDelayMs}ms")
+                        state.pendingDoubleTap = Runnable {
+                            state.onDoubleTap()
+                            state.pendingDoubleTap = null
+                        }.also { handler.postDelayed(it, state.doubleTapDelayMs) }
                     } else {
-                        Log.d(TAG, "  → double-tap detected → reset viewport to center")
-                        viewModel.resetViewport(Offset(viewWidth / 2f, viewHeight / 2f))
+                        Log.d(TAG, "  → double-tap: immediate")
+                        state.onDoubleTap()
                     }
                 }
                 3 -> {
-                    Log.d(TAG, "  → triple-tap detected → reset to origin")
-                    val vp = if (zoomLocked)
-                        CanvasViewport(zoom = viewModel.viewport.value.zoom, zoomLocked = true)
-                    else
-                        CanvasViewport()
-                    viewModel.setViewport(vp)
-                    twoFingerTapCount = 0
+                    Log.d(TAG, "  → triple-tap")
+                    state.pendingDoubleTap?.let { handler.removeCallbacks(it) }
+                    state.pendingDoubleTap = null
+                    state.onTripleTap()
+                    state.tapCount = 0
                 }
             }
         } else {
-            if (twoFingerTapCount > 0) Log.d(TAG, "  → tap sequence broken (moved=${moved.toInt()}px or duration=${duration}ms)")
-            lastTwoFingerTapTime = 0L
-            twoFingerTapCount = 0
+            Log.d(TAG, "  → tap sequence reset (moved=${moved.toInt()}px, duration=${duration}ms)")
+            state.lastTapTime = 0L
+            state.tapCount = 0
+            state.pendingDoubleTap?.let { handler.removeCallbacks(it) }
+            state.pendingDoubleTap = null
         }
     }
 
-    // ── Stylus detection ─────────────────────────────────────────
+    private fun cancelPendingDoubleTap(state: TapGesture) {
+        state.pendingDoubleTap?.let { handler.removeCallbacks(it) }
+        state.pendingDoubleTap = null
+    }
+
+    private fun maxPointerMovement(event: MotionEvent): Float {
+        var maxMoved = 0f
+        for (i in 0 until event.pointerCount) {
+            val anchor = gestureAnchors[event.getPointerId(i)] ?: continue
+            val dx = event.getX(i) - anchor.first
+            val dy = event.getY(i) - anchor.second
+            maxMoved = maxOf(maxMoved, sqrt(dx * dx + dy * dy))
+        }
+        return maxMoved
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Stylus button detection
+    // ═══════════════════════════════════════════════════════════════
 
     private fun detectStrokeModifier(event: MotionEvent, pointerIndex: Int = 0): StrokeModifier {
         if (event.getToolType(pointerIndex) != MotionEvent.TOOL_TYPE_STYLUS) return StrokeModifier.None

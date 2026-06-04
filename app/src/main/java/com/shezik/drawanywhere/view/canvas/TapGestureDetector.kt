@@ -37,6 +37,7 @@ class TapGestureDetector(
     private val onThreeFingerTripleTap: () -> Unit,
     private val twoFingerDoubleTapDelayMs: Long = 0L,
     private val threeFingerDoubleTapDelayMs: Long = TAP_INTERVAL_MS,
+    private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
     companion object {
         private const val TAG = "TapDetect"
@@ -45,7 +46,6 @@ class TapGestureDetector(
         const val TAP_INTERVAL_MS = 200L
     }
 
-    private val handler = Handler(Looper.getMainLooper())
     private val gestureAnchors = mutableMapOf<Int, Pair<Float, Float>>()
 
     /** Maximum finger count seen during the current multi-touch gesture. */

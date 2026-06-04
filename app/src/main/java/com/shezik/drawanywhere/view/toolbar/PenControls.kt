@@ -17,7 +17,7 @@ fun PenControls(
     penConfig: PenConfig,
     onStrokeWidthChange: (Float) -> Unit,
     onAlphaChange: (Float) -> Unit,
-    showAlpha: Boolean = true,
+    alphaEnabled: Boolean = true,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
@@ -31,17 +31,17 @@ fun PenControls(
             value = penConfig.width,
             valueRange = 1f..50f,
             onValueChange = onStrokeWidthChange,
-            valueDisplay = { "${it.toInt()}px" }
+            valueDisplay = { "${it.toInt()}px" },
+            enabled = true,
         )
-        if (showAlpha) {
-            SliderControl(
-                label = stringResource(R.string.opacity),
-                value = penConfig.alpha,
-                valueRange = 0.1f..1f,
-                onValueChange = onAlphaChange,
-                valueDisplay = { "${(it * 100).toInt()}%" }
-            )
-        }
+        SliderControl(
+            label = stringResource(R.string.opacity),
+            value = penConfig.alpha,
+            valueRange = 0.1f..1f,
+            onValueChange = onAlphaChange,
+            valueDisplay = { "${(it * 100).toInt()}%" },
+            enabled = alphaEnabled,
+        )
     }
 }
 
@@ -51,7 +51,8 @@ fun SliderControl(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
-    valueDisplay: (Float) -> String
+    valueDisplay: (Float) -> String,
+    enabled: Boolean = true,
 ) {
     Column {
         Row(
@@ -63,7 +64,8 @@ fun SliderControl(
                 text = label,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = if (enabled) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             )
             Text(
                 text = valueDisplay(value),
@@ -77,10 +79,14 @@ fun SliderControl(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
+            enabled = enabled,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                disabledThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                disabledActiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                disabledInactiveTrackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
             )
         )
     }

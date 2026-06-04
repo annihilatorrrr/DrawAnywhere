@@ -83,20 +83,19 @@ fun createAllToolbarButtons(
         contentDescription = stringResource(R.string.tool_controls),
         popupPages = listOf(
             { PenTypeSelector(currentPenType = uiState.currentPenType, onPenTypeSwitch = onPenTypeSwitch) },
-            { PenControls(penConfig = uiState.currentPenConfig, onStrokeWidthChange = onStrokeWidthChange, onAlphaChange = onAlphaChange, showAlpha = uiState.currentPenType != PenType.StrokeEraser) }
+            { PenControls(penConfig = uiState.currentPenConfig, onStrokeWidthChange = onStrokeWidthChange, onAlphaChange = onAlphaChange, alphaEnabled = uiState.currentPenType != PenType.StrokeEraser) }
         )
     ),
-) + (if (uiState.currentPenType != PenType.StrokeEraser) listOf(
     ToolbarButton(
         id = "color_picker",
         icon = Icons.Default.Palette,
-        color = uiState.currentPenConfig.color,
+        color = if (uiState.currentPenType != PenType.StrokeEraser) uiState.currentPenConfig.color else null,
         contentDescription = stringResource(R.string.color_picker),
+        isEnabled = uiState.currentPenType != PenType.StrokeEraser,
         popupPages = listOf(
             { ColorPicker(selectedColor = uiState.currentPenConfig.color, onColorSelected = onColorChange) }
         )
     ),
-) else emptyList<ToolbarButton>()) + listOf(
     ToolbarButton(
         id = "zoom_lock",
         icon = if (isZoomLocked) Icons.Default.Lock else Icons.Default.LockOpen,

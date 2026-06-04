@@ -12,12 +12,14 @@ PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License along
 with this program. If not, see <https://www.gnu.org/licenses/>.
- */
+*/
 
 package com.shezik.drawanywhere
 
 import androidx.compose.ui.geometry.Offset
 import com.shezik.drawanywhere.controller.UndoRedoManager
+import com.shezik.drawanywhere.drawing.StrokeTool
+import com.shezik.drawanywhere.drawing.ToolContext
 import com.shezik.drawanywhere.model.DrawAction
 import com.shezik.drawanywhere.model.DrawObject
 import com.shezik.drawanywhere.model.PenConfig
@@ -26,6 +28,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/**
+ * Owns the stroke list and undo/redo stack. Drawing logic is delegated to
+ * [StrokeTool] implementations via [PenType.createTool].
+ */
 class DrawController(initialConfig: PenConfig) {
     var penConfig: PenConfig = initialConfig
         private set
@@ -47,105 +53,33 @@ class DrawController(initialConfig: PenConfig) {
     private val _canClear = MutableStateFlow(false)
     val canClearStrokes: StateFlow<Boolean> = _canClear.asStateFlow()
 
+    private var activeTool: StrokeTool? = null
+
+    private val toolContext get() = ToolContext(
+        strokes = _strokeList,
+        penConfig = penConfig,
+        onUndoPush = undoRedo::push,
+        onChanged = ::notifyChanged,
+    )
+
     private fun notifyChanged() {
-        updateClearStrokesState()
+        _canClear.value = _strokeList.isNotEmpty()
         onStrokesChanged?.invoke()
     }
 
-    fun updateLatestStroke(newPoint: Offset) {
-        if (penConfig.penType == PenType.StrokeEraser) {
-            eraseStroke(newPoint)
-            return
-        }
-        _strokeList.lastOrNull()?.let { stroke ->
-            when (stroke.penType) {
-                PenType.Rectangle, PenType.Ellipse -> stroke._points[1] = newPoint
-                else -> stroke._points.add(newPoint)
-            }
-        }
+    fun createStroke(newPoint: Offset) {
+        val tool = penConfig.penType.createTool(toolContext)
+        activeTool = tool
+        tool.onStart(newPoint)
     }
 
-    fun createStroke(newPoint: Offset) {
-        if (penConfig.penType == PenType.StrokeEraser) {
-            eraseStroke(newPoint)
-            return
-        }
-        val points = when (penConfig.penType) {
-            PenType.Rectangle, PenType.Ellipse -> mutableListOf(newPoint, newPoint)
-            else -> mutableListOf(newPoint)
-        }
-        _strokeList.add(DrawObject.Stroke(
-            _points = points,
-            color = penConfig.color,
-            width = penConfig.width,
-            alpha = penConfig.alpha,
-            penType = penConfig.penType,
-        ))
+    fun updateLatestStroke(newPoint: Offset) {
+        activeTool?.onMove(newPoint)
     }
 
     fun finishStroke() {
-        if (penConfig.penType == PenType.StrokeEraser) return
-        if (_strokeList.isEmpty()) return
-        val latest = _strokeList.last()
-
-        // Normalize rectangle/ellipse: ensure left < right, top < bottom; discard if too small
-        if (latest.penType == PenType.Rectangle || latest.penType == PenType.Ellipse) {
-            val p0 = latest.points[0]; val p1 = latest.points[1]
-            val left = minOf(p0.x, p1.x); val top = minOf(p0.y, p1.y)
-            val right = maxOf(p0.x, p1.x); val bottom = maxOf(p0.y, p1.y)
-            if (right - left < 4f && bottom - top < 4f) {
-                _strokeList.removeAt(_strokeList.lastIndex)
-                return
-            }
-            latest._points[0] = Offset(left, top)
-            latest._points[1] = Offset(right, bottom)
-        } else {
-            if (latest.points.isEmpty()) {
-                _strokeList.removeAt(_strokeList.lastIndex)
-                return
-            }
-        }
-        undoRedo.push(DrawAction.AddStroke(latest))
-        notifyChanged()
-    }
-
-    private fun eraseStroke(point: Offset) {
-        val eraserRadius = penConfig.width / 2
-        var indexToErase: Int? = null
-        for (i in _strokeList.indices.reversed()) {
-            val stroke = _strokeList[i]
-            val r = stroke.width / 2 + eraserRadius
-
-            when (stroke.penType) {
-                PenType.Rectangle, PenType.Ellipse -> {
-                    if (stroke.points.size < 2) continue
-                    val p0 = stroke.points[0]; val p1 = stroke.points[1]
-                    if (hitTestRectEdge(point, minOf(p0.x, p1.x), minOf(p0.y, p1.y),
-                            maxOf(p0.x, p1.x), maxOf(p0.y, p1.y), r)) {
-                        indexToErase = i
-                    }
-                }
-                else -> {
-                    if (stroke.points.size > 1) {
-                        stroke.points.zipWithNext().forEach { (p1, p2) ->
-                            if (distancePointToLineSegment(point, p1, p2) <= r) {
-                                indexToErase = i; return@forEach
-                            }
-                        }
-                    } else {
-                        stroke.points.firstOrNull()?.let {
-                            if (distance(point, it) <= r) indexToErase = i
-                        }
-                    }
-                }
-            }
-            if (indexToErase != null) break
-        }
-        indexToErase?.let {
-            val erased = _strokeList.removeAt(it)
-            undoRedo.push(DrawAction.EraseStroke(erased))
-            notifyChanged()
-        }
+        activeTool?.onFinish()
+        activeTool = null
     }
 
     fun clearStrokes() {
@@ -155,17 +89,11 @@ class DrawController(initialConfig: PenConfig) {
         notifyChanged()
     }
 
-    private fun updateClearStrokesState() {
-        _canClear.value = _strokeList.isNotEmpty()
-    }
-
     fun undo() {
         val action = undoRedo.popUndo() ?: return
         when (action) {
             is DrawAction.AddStroke -> {
-                if (_strokeList.remove(action.stroke)) {
-                    undoRedo.pushRedo(action)
-                }
+                if (_strokeList.remove(action.stroke)) undoRedo.pushRedo(action)
             }
             is DrawAction.EraseStroke -> {
                 _strokeList.add(action.stroke)
@@ -173,6 +101,11 @@ class DrawController(initialConfig: PenConfig) {
             }
             is DrawAction.ClearStrokes -> {
                 _strokeList.addAll(action.strokes)
+                undoRedo.pushRedo(action)
+            }
+            is DrawAction.CanvasSnapshot -> {
+                _strokeList.clear()
+                _strokeList.addAll(action.before)
                 undoRedo.pushRedo(action)
             }
         }
@@ -187,12 +120,15 @@ class DrawController(initialConfig: PenConfig) {
                 undoRedo.push(action, clearRedo = false)
             }
             is DrawAction.EraseStroke -> {
-                if (_strokeList.remove(action.stroke)) {
-                    undoRedo.push(action, clearRedo = false)
-                }
+                if (_strokeList.remove(action.stroke)) undoRedo.push(action, clearRedo = false)
             }
             is DrawAction.ClearStrokes -> {
                 _strokeList.removeAll(action.strokes)
+                undoRedo.push(action, clearRedo = false)
+            }
+            is DrawAction.CanvasSnapshot -> {
+                _strokeList.clear()
+                _strokeList.addAll(action.after)
                 undoRedo.push(action, clearRedo = false)
             }
         }

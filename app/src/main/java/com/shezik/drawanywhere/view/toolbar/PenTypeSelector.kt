@@ -24,14 +24,7 @@ fun PenTypeSelector(
             color = MaterialTheme.colorScheme.onSurface
         )
         val penTypes = PenType.entries.map { type ->
-            type to stringResource(
-                when (type) {
-                    PenType.Pen -> R.string.pen
-                    PenType.Rectangle -> R.string.rectangle
-                    PenType.Ellipse -> R.string.ellipse
-                    PenType.StrokeEraser -> R.string.stroke_eraser
-                }
-            )
+            type to stringResource(type.labelResId)
         }
         penTypes.forEach { (penType, label) ->
             val isSelected = currentPenType == penType

@@ -19,4 +19,5 @@ sealed class DrawAction {
     data class AddStroke(val stroke: DrawObject.Stroke) : DrawAction()
     data class EraseStroke(val stroke: DrawObject.Stroke) : DrawAction()
     data class ClearStrokes(val strokes: List<DrawObject.Stroke>) : DrawAction()
+    data class CanvasSnapshot(val before: List<DrawObject.Stroke>, val after: List<DrawObject.Stroke>) : DrawAction()
 }

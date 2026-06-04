@@ -11,6 +11,7 @@
     <string name="rectangle">Rectangle</string>
     <string name="ellipse">Ellipse</string>
     <string name="stroke_eraser">Stroke Eraser</string>
+    <string name="pixel_eraser">Pixel Eraser</string>
     <string name="color">Color</string>
     <string name="width">Width</string>
     <string name="opacity">Opacity</string>

@@ -79,19 +79,20 @@ fun createAllToolbarButtons(
             PenType.Rectangle -> Icons.Default.CropSquare
             PenType.Ellipse -> Icons.Default.RadioButtonUnchecked
             PenType.StrokeEraser -> InkEraser24Px
+            PenType.PixelEraser -> Icons.Default.BlurOn
         },
         contentDescription = stringResource(R.string.tool_controls),
         popupPages = listOf(
             { PenTypeSelector(currentPenType = uiState.currentPenType, onPenTypeSwitch = onPenTypeSwitch) },
-            { PenControls(penConfig = uiState.currentPenConfig, onStrokeWidthChange = onStrokeWidthChange, onAlphaChange = onAlphaChange, alphaEnabled = uiState.currentPenType != PenType.StrokeEraser) }
+            { PenControls(penConfig = uiState.currentPenConfig, onStrokeWidthChange = onStrokeWidthChange, onAlphaChange = onAlphaChange, alphaEnabled = !uiState.currentPenType.isEraser) }
         )
     ),
     ToolbarButton(
         id = "color_picker",
         icon = Icons.Default.Palette,
-        color = if (uiState.currentPenType != PenType.StrokeEraser) uiState.currentPenConfig.color else null,
+        color = if (!uiState.currentPenType.isEraser) uiState.currentPenConfig.color else null,
         contentDescription = stringResource(R.string.color_picker),
-        isEnabled = uiState.currentPenType != PenType.StrokeEraser,
+        isEnabled = !uiState.currentPenType.isEraser,
         popupPages = listOf(
             { ColorPicker(selectedColor = uiState.currentPenConfig.color, onColorSelected = onColorChange) }
         )

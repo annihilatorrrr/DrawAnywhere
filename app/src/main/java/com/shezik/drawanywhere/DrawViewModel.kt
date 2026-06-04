@@ -68,12 +68,14 @@ data class UiState(
         get() = penConfigs[currentPenType] ?: PenConfig()
 }
 
-fun defaultPenConfigs(): Map<PenType, PenConfig> = mapOf(
-    PenType.Pen to PenConfig(penType = PenType.Pen),
-    PenType.Rectangle to PenConfig(penType = PenType.Rectangle),
-    PenType.Ellipse to PenConfig(penType = PenType.Ellipse),
-    PenType.StrokeEraser to PenConfig(penType = PenType.StrokeEraser, width = 50f, color = Color.LightGray),
-)
+fun defaultPenConfigs(): Map<PenType, PenConfig> = PenType.entries.associateWith { type ->
+    if (type.isEraser) {
+        val w = if (type == PenType.StrokeEraser) 50f else 30f
+        PenConfig(penType = type, width = w, color = Color.LightGray)
+    } else {
+        PenConfig(penType = type)
+    }
+}
 
 @OptIn(FlowPreview::class)
 class DrawViewModel(

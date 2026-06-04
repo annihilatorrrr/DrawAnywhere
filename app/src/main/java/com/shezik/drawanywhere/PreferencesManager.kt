@@ -79,8 +79,8 @@ class PreferencesManager(private val context: Context) {
             val alpha = preferences[PreferencesKeys.penAlphaKey(penType)]
 
             val defaultConfig = defaultUiState.penConfigs[penType] ?: PenConfig(penType = penType)
-            if (penType == PenType.StrokeEraser) {
-                // Eraser has no visual appearance — always use default color/alpha
+            if (penType.isEraser) {
+                // Eraser has no visual appearance — always use default color/alpha, only persist width
                 if (width != null) {
                     penConfigs[penType] = defaultConfig.copy(width = width)
                 }
@@ -122,7 +122,7 @@ class PreferencesManager(private val context: Context) {
 
             // Save each pen's configuration
             for ((penType, config) in uiState.penConfigs) {
-                if (penType != PenType.StrokeEraser) {
+                if (!penType.isEraser) {
                     preferences[PreferencesKeys.penColorKey(penType)] = config.color.toArgb()
                     preferences[PreferencesKeys.penAlphaKey(penType)] = config.alpha
                 }

@@ -12,6 +12,7 @@
     <string name="rectangle">矩形</string>
     <string name="ellipse">椭圆</string>
     <string name="stroke_eraser">笔画橡皮</string>
+    <string name="pixel_eraser">像素橡皮</string>
     <string name="color">颜色</string>
     <string name="width">宽度</string>
     <string name="opacity">不透明度</string>

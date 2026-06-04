@@ -64,7 +64,7 @@ class DrawControllerTest {
     @Test
     fun canClearFalseWhenEmpty() = runTest {
         val c = newController()
-        assertFalse(c.canClearPaths.first())
+        assertFalse(c.canClearStrokes.first())
     }
 
     @Test
@@ -72,7 +72,7 @@ class DrawControllerTest {
         val c = newController()
         c.createStroke(Offset(0f, 0f))
         c.finishStroke()
-        assertTrue(c.canClearPaths.first())
+        assertTrue(c.canClearStrokes.first())
     }
 
     @Test
@@ -179,10 +179,10 @@ class DrawControllerTest {
     }
 
     @Test
-    fun onPathsChangedCallbackFires() {
+    fun onStrokesChangedCallbackFires() {
         val c = newController()
         var fired = false
-        c.onPathsChanged = { fired = true }
+        c.onStrokesChanged = { fired = true }
         c.createStroke(Offset(0f, 0f))
         c.updateLatestStroke(Offset(10f, 10f))
         c.finishStroke()
@@ -190,24 +190,24 @@ class DrawControllerTest {
     }
 
     @Test
-    fun onPathsChangedFiresOnClear() {
+    fun onStrokesChangedFiresOnClear() {
         val c = newController()
         c.createStroke(Offset(0f, 0f))
         c.finishStroke()
         var fired = false
-        c.onPathsChanged = { fired = true }
+        c.onStrokesChanged = { fired = true }
         c.clearStrokes()
         assertTrue(fired)
     }
 
     @Test
-    fun onPathsChangedFiresOnUndo() {
+    fun onStrokesChangedFiresOnUndo() {
         val c = newController()
         c.createStroke(Offset(0f, 0f))
         c.finishStroke()
         c.clearStrokes()
         var fired = false
-        c.onPathsChanged = { fired = true }
+        c.onStrokesChanged = { fired = true }
         c.undo()
         assertTrue(fired)
     }

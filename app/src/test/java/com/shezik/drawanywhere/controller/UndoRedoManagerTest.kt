@@ -16,7 +16,7 @@ class UndoRedoManagerTest {
         color = Color.Red, width = 5f, alpha = 1f
     )
 
-    private fun addAction() = DrawAction.AddPath(newStroke())
+    private fun addAction() = DrawAction.AddStroke(newStroke())
 
     @Test
     fun initiallyCannotUndoOrRedo() = runTest {

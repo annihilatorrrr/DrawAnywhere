@@ -86,7 +86,7 @@ class MainService : Service() {
 
         // -------- Setup native canvas --------
         canvasView = NativeDrawCanvasView(this, drawController, viewModel)
-        drawController.onPathsChanged = { canvasView.invalidate() }
+        drawController.onStrokesChanged = { canvasView.invalidate() }
 
         val canvasParams = LayoutParams(
             LayoutParams.MATCH_PARENT,

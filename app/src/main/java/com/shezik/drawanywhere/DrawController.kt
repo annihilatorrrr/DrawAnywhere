@@ -34,7 +34,7 @@ class DrawController(initialConfig: PenConfig) {
         penConfig = config
     }
 
-    var onPathsChanged: (() -> Unit)? = null
+    var onStrokesChanged: (() -> Unit)? = null
 
     private val _strokeList = mutableListOf<DrawObject.Stroke>()
     val strokeList: List<DrawObject.Stroke>
@@ -45,11 +45,11 @@ class DrawController(initialConfig: PenConfig) {
     val canRedo: StateFlow<Boolean> = undoRedo.canRedo
 
     private val _canClear = MutableStateFlow(false)
-    val canClearPaths: StateFlow<Boolean> = _canClear.asStateFlow()
+    val canClearStrokes: StateFlow<Boolean> = _canClear.asStateFlow()
 
     private fun notifyChanged() {
-        updateClearPathsState()
-        onPathsChanged?.invoke()
+        updateClearStrokesState()
+        onStrokesChanged?.invoke()
     }
 
     fun updateLatestStroke(newPoint: Offset) {
@@ -105,7 +105,7 @@ class DrawController(initialConfig: PenConfig) {
                 return
             }
         }
-        undoRedo.push(DrawAction.AddPath(latest))
+        undoRedo.push(DrawAction.AddStroke(latest))
         notifyChanged()
     }
 
@@ -143,35 +143,35 @@ class DrawController(initialConfig: PenConfig) {
         }
         indexToErase?.let {
             val erased = _strokeList.removeAt(it)
-            undoRedo.push(DrawAction.ErasePath(erased))
+            undoRedo.push(DrawAction.EraseStroke(erased))
             notifyChanged()
         }
     }
 
     fun clearStrokes() {
         if (_strokeList.isEmpty()) return
-        undoRedo.push(DrawAction.ClearPaths(_strokeList.toList()))
+        undoRedo.push(DrawAction.ClearStrokes(_strokeList.toList()))
         _strokeList.clear()
         notifyChanged()
     }
 
-    private fun updateClearPathsState() {
+    private fun updateClearStrokesState() {
         _canClear.value = _strokeList.isNotEmpty()
     }
 
     fun undo() {
         val action = undoRedo.popUndo() ?: return
         when (action) {
-            is DrawAction.AddPath -> {
+            is DrawAction.AddStroke -> {
                 if (_strokeList.remove(action.stroke)) {
                     undoRedo.pushRedo(action)
                 }
             }
-            is DrawAction.ErasePath -> {
+            is DrawAction.EraseStroke -> {
                 _strokeList.add(action.stroke)
                 undoRedo.pushRedo(action)
             }
-            is DrawAction.ClearPaths -> {
+            is DrawAction.ClearStrokes -> {
                 _strokeList.addAll(action.strokes)
                 undoRedo.pushRedo(action)
             }
@@ -182,16 +182,16 @@ class DrawController(initialConfig: PenConfig) {
     fun redo() {
         val action = undoRedo.popRedo() ?: return
         when (action) {
-            is DrawAction.AddPath -> {
+            is DrawAction.AddStroke -> {
                 _strokeList.add(action.stroke)
                 undoRedo.push(action, clearRedo = false)
             }
-            is DrawAction.ErasePath -> {
+            is DrawAction.EraseStroke -> {
                 if (_strokeList.remove(action.stroke)) {
                     undoRedo.push(action, clearRedo = false)
                 }
             }
-            is DrawAction.ClearPaths -> {
+            is DrawAction.ClearStrokes -> {
                 _strokeList.removeAll(action.strokes)
                 undoRedo.push(action, clearRedo = false)
             }

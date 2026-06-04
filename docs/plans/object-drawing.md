@@ -109,9 +109,8 @@ when (viewModel.uiState.value.currentPenType) {
 }
 
 // MOVE
-if (isDrawing && shapeActive) {
+if (shapeActive) {
     shapeCurrentPoint = point  // 更新拖拽终点
-    onInvalidate()             // 触发预览重绘
 }
 // 原有的 updateStroke 在 else 分支
 
@@ -167,23 +166,6 @@ fun createShapeStroke(stroke: DrawObject.Stroke) {
 ```
 
 这和 `startStroke` + `finishStroke` 的效果一样（加 Stroke + 推 undo），但不走 `isStrokeDown` 状态机和 `startStroke` 里的 eraser 分支。简单直接。
-
-### 2.3 预览渲染
-
-**文件：** `CanvasTouchHandler.kt` / `NativeDrawCanvasView.kt`
-
-`CanvasTouchHandler` 暴露 `shapePreview: RectF?` getter，拖拽中返回当前预览矩形（虚线），未拖拽返回 null。
-
-`NativeDrawCanvasView.onDraw()` 末尾画预览：
-
-```kotlin
-touchHandler.shapePreview?.let { rect ->
-    dashPaint.strokeWidth = 2f
-    canvas.drawRect(rect, dashPaint)
-}
-```
-
-`dashPaint` 用 `DashPathEffect` 实现虚线。
 
 ---
 
@@ -315,8 +297,8 @@ fun defaultPenConfigs(): Map<PenType, PenConfig> = mapOf(
 | `model/PenType.kt` | 加 `Rectangle`, `Ellipse` |
 | `model/DrawObject.kt` | Stroke 加 `penType` 字段 |
 | `DrawController.kt` | `createStroke` 传入 penType；加 `createShapeStroke`；`eraseStroke` 适配形状 hit test |
-| `CanvasTouchHandler.kt` | DOWN/MOVE/UP 按 penType 分流形状绘制；暴露 `shapePreview` |
-| `NativeDrawCanvasView.kt` | `onDraw` 按 penType 分支渲染；虚线预览 |
+| `CanvasTouchHandler.kt` | DOWN/MOVE/UP 按 penType 分流形状绘制 |
+| `NativeDrawCanvasView.kt` | `onDraw` 按 penType 分支渲染 |
 | `DrawViewModel.kt` | `defaultPenConfigs` 加矩形/椭圆默认值 |
 | `PenTypeSelector.kt` | 扩展到 4 个工具图标 |
 | `values/strings.xml` | 加矩形/椭圆字符串 |

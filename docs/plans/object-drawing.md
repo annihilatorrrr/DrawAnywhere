@@ -78,13 +78,13 @@ DrawObject.Stroke(
 
 ---
 
-## Phase 2: 矩形 / 椭圆绘制手势（估计 1.5h）
+## Phase 2: 矩形 / 椭圆绘制手势（估计 1h）
 
-### 2.1 CanvasTouchHandler 区分笔类型
+### 2.1 思路
 
-**文件：** `CanvasTouchHandler.kt`
+`CanvasTouchHandler` 不动。形状和自由绘制的差异封装在 `DrawController` 内部——由 `penConfig.penType` 决定 `createStroke` / `updateLatestStroke` 的行为。
 
-当前单指路径概览：
+当前调用链（不变）：
 
 ```
 DOWN  → viewModel.startStroke(point, modifier)
@@ -92,80 +92,93 @@ MOVE  → viewModel.updateStroke(point)
 UP    → viewModel.finishStroke()
 ```
 
-改为按 `penType` 分流：
+### 2.2 DrawController.createStroke 按 penType 分支
+
+**文件：** `DrawController.kt`
+
+自由绘制：创建 1 个 point 的 Stroke，后续 `updateLatestStroke` 逐个追加。
+
+矩形/椭圆：创建 2 个 point 的 Stroke（起点和终点初始为同一点），后续 `updateLatestStroke` 替换第二个点。
 
 ```kotlin
-// DOWN
-when (viewModel.uiState.value.currentPenType) {
-    PenType.Pen, PenType.StrokeEraser -> {
-        // 现有自由绘制逻辑（不变）
-        viewModel.startStroke(point, modifier)
+fun createStroke(newPoint: Offset) {
+    if (penConfig.penType == PenType.StrokeEraser) {
+        eraseStroke(newPoint)
+        return
     }
-    PenType.Rectangle, PenType.Ellipse -> {
-        shapeStartPoint = point  // 记录锚点
-        shapeActive = true
-        isDrawing = true  // 消费事件，防止穿透
+    val points = when (penConfig.penType) {
+        PenType.Pen -> mutableListOf(newPoint)                 // 自由绘制：起始 1 点
+        PenType.Rectangle, PenType.Ellipse -> mutableListOf(newPoint, newPoint) // 形状：锚点=终点（初始）
+        else -> mutableListOf(newPoint)
     }
-}
-
-// MOVE
-if (shapeActive) {
-    shapeCurrentPoint = point  // 更新拖拽终点
-}
-// 原有的 updateStroke 在 else 分支
-
-// UP
-if (shapeActive) {
-    commitShape()  // 生成 2 点 Stroke 写入 DrawController
-    shapeActive = false
+    _strokeList.add(DrawObject.Stroke(
+        points = points,
+        color = penConfig.color,
+        width = penConfig.width,
+        alpha = penConfig.alpha,
+        penType = penConfig.penType,
+    ))
 }
 ```
 
-`commitShape()` 逻辑：
-
-```kotlin
-private fun commitShape() {
-    val start = shapeStartPoint ?: return
-    val end = shapeCurrentPoint ?: start
-    
-    // 标准化：确保 points[0] 是左上，points[1] 是右下
-    val left = min(start.x, end.x)
-    val top = min(start.y, end.y)
-    val right = max(start.x, end.x)
-    val bottom = max(start.y, end.y)
-    
-    if (right - left < 4f && bottom - top < 4f) return  // 太小，丢弃
-    
-    val config = viewModel.uiState.value.currentPenConfig
-    val stroke = DrawObject.Stroke(
-        points = mutableListOf(Offset(left, top), Offset(right, bottom)),
-        color = config.color,
-        width = config.width,
-        alpha = config.alpha,
-        penType = config.penType,  // Rectangle 或 Ellipse
-    )
-    controller.createShapeStroke(stroke)
-    onInvalidate()
-}
-```
-
-注意：`commitShape` 走的是不同于 `startStroke→updateStroke→finishStroke` 的路径。需要在 `DrawController` 加一个方法，或者直接用现有 `finishStroke` 的 undo 推入逻辑。
-
-**更简单的做法：** 不走 `viewModel.startStroke()`，直接用 `drawController` 的方法。把 `DrawController` 当前的 `createStroke` / `finishStroke` 逻辑拆出一个公共入口。
-
-### 2.2 DrawController 加 createShapeStroke
+### 2.3 DrawController.updateLatestStroke 按 penType 分支
 
 **文件：** `DrawController.kt`
 
 ```kotlin
-fun createShapeStroke(stroke: DrawObject.Stroke) {
-    _strokeList.add(stroke)
-    undoRedo.push(DrawAction.AddPath(stroke))
+fun updateLatestStroke(newPoint: Offset) {
+    if (penConfig.penType == PenType.StrokeEraser) {
+        eraseStroke(newPoint)
+        return
+    }
+    val stroke = _strokeList.lastOrNull() ?: return
+    when (stroke.penType) {
+        PenType.Pen -> stroke.points.add(newPoint)       // 追加
+        PenType.Rectangle, PenType.Ellipse -> stroke.points[1] = newPoint  // 替换终点
+        else -> stroke.points.add(newPoint)
+    }
+}
+```
+
+### 2.4 DrawController.finishStroke 标准化形状
+
+**文件：** `DrawController.kt`
+
+形状的 2 点可能形成反向矩形（end 在 start 左上方），finish 时标准化并丢弃过小形状。
+
+```kotlin
+fun finishStroke() {
+    if (penConfig.penType == PenType.StrokeEraser) return
+    if (_strokeList.isEmpty()) return
+    val latest = _strokeList.last()
+
+    // 标准化形状矩形
+    if (latest.penType == PenType.Rectangle || latest.penType == PenType.Ellipse) {
+        val p0 = latest.points[0]; val p1 = latest.points[1]
+        val left = min(p0.x, p1.x); val top = min(p0.y, p1.y)
+        val right = max(p0.x, p1.x); val bottom = max(p0.y, p1.y)
+        if (right - left < 4f && bottom - top < 4f) {
+            _strokeList.removeAt(_strokeList.lastIndex)  // 太小，丢弃
+            return
+        }
+        latest.points[0] = Offset(left, top)
+        latest.points[1] = Offset(right, bottom)
+    } else {
+        // 原有逻辑：空 points 的 stroke 丢弃
+        if (latest.points.isEmpty()) {
+            _strokeList.removeAt(_strokeList.lastIndex)
+            return
+        }
+    }
+
+    undoRedo.push(DrawAction.AddPath(latest))
     notifyChanged()
 }
 ```
 
-这和 `startStroke` + `finishStroke` 的效果一样（加 Stroke + 推 undo），但不走 `isStrokeDown` 状态机和 `startStroke` 里的 eraser 分支。简单直接。
+### 2.5 CanvasTouchHandler 不动
+
+不需要 `when (penType)` 分支、不需要 `shapeStartPoint` / `shapeActive` / `commitShape`。它继续调 `startStroke → updateStroke → finishStroke`，和自由绘制完全一样的路径。
 
 ---
 
@@ -296,8 +309,8 @@ fun defaultPenConfigs(): Map<PenType, PenConfig> = mapOf(
 |------|------|
 | `model/PenType.kt` | 加 `Rectangle`, `Ellipse` |
 | `model/DrawObject.kt` | Stroke 加 `penType` 字段 |
-| `DrawController.kt` | `createStroke` 传入 penType；加 `createShapeStroke`；`eraseStroke` 适配形状 hit test |
-| `CanvasTouchHandler.kt` | DOWN/MOVE/UP 按 penType 分流形状绘制 |
+| `DrawController.kt` | `createStroke`/`updateLatestStroke`/`finishStroke` 按 penType 分支 |
+| `CanvasTouchHandler.kt` | 不动 |
 | `NativeDrawCanvasView.kt` | `onDraw` 按 penType 分支渲染 |
 | `DrawViewModel.kt` | `defaultPenConfigs` 加矩形/椭圆默认值 |
 | `PenTypeSelector.kt` | 扩展到 4 个工具图标 |

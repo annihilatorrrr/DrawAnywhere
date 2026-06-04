@@ -1,6 +1,6 @@
 /*
 DrawAnywhere: An Android application that lets you draw on top of other apps.
-Copyright (C) 2025 shezik
+Copyright (C) 2025-2026 shezik
 
 This program is free software: you can redistribute it and/or modify it under the
 terms of the GNU Affero General Public License as published by the Free Software

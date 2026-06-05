@@ -1,7 +1,7 @@
 package com.shezik.drawanywhere.drawing
 
 import com.shezik.drawanywhere.model.DrawAction
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 import com.shezik.drawanywhere.model.PenConfig
 
 /**
@@ -10,7 +10,7 @@ import com.shezik.drawanywhere.model.PenConfig
  */
 class ToolContext(
     /** Mutable access to the stroke list (package-private conceptually — only tools use it). */
-    val strokes: MutableList<DrawObject.Stroke>,
+    val strokes: MutableList<Stroke>,
     /** Current pen configuration (width, color, alpha, penType). */
     val penConfig: PenConfig,
     private val onUndoPush: (DrawAction) -> Unit,

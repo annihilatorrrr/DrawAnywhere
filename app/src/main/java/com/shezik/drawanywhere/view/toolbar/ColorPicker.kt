@@ -53,7 +53,7 @@ internal val PRESET_COLORS = listOf(
 )
 
 @Composable
-internal fun ColorSwatchButton(color: Color, isSelected: Boolean, onClick: () -> Unit) {
+private fun ColorSwatchButton(color: Color, isSelected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(24.dp)

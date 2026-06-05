@@ -20,15 +20,15 @@ import androidx.compose.ui.geometry.Offset
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-fun distanceSquared(p1: Offset, p2: Offset): Float {
+internal fun distanceSquared(p1: Offset, p2: Offset): Float {
     return (p1.x - p2.x).pow(2) + (p1.y - p2.y).pow(2)
 }
 
-fun distance(p1: Offset, p2: Offset): Float {
+internal fun distance(p1: Offset, p2: Offset): Float {
     return sqrt(distanceSquared(p1, p2))
 }
 
-fun distancePointToLineSegment(p: Offset, a: Offset, b: Offset): Float {
+internal fun distancePointToLineSegment(p: Offset, a: Offset, b: Offset): Float {
     val ap = Offset(p.x - a.x, p.y - a.y)  // Vector from a to p
     val ab = Offset(b.x - a.x, b.y - a.y)  // Vector from a to b
 
@@ -55,7 +55,7 @@ fun distancePointToLineSegment(p: Offset, a: Offset, b: Offset): Float {
     return distance(p, closest)
 }
 
-fun hitTestRectEdge(
+internal fun hitTestRectEdge(
     point: Offset,
     left: Float, top: Float, right: Float, bottom: Float,
     threshold: Float

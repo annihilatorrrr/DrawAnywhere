@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-fun Modifier.scrollFadingEdges(
+internal fun Modifier.scrollFadingEdges(
     scrollState: ScrollState,
     isVertical: Boolean = true,
     fadeSize: Dp = 16.dp,

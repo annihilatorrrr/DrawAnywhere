@@ -3,7 +3,7 @@ package com.shezik.drawanywhere
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.shezik.drawanywhere.model.DrawAction
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
@@ -11,7 +11,7 @@ import org.junit.Test
 
 class UndoRedoManagerTest {
 
-    private fun newStroke() = DrawObject.Stroke(
+    private fun newStroke() = Stroke(
         _points = mutableListOf(Offset(0f, 0f)),
         color = Color.Red, width = 5f, alpha = 1f
     )

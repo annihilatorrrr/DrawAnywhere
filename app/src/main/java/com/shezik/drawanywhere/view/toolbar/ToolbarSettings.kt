@@ -1,6 +1,5 @@
 package com.shezik.drawanywhere.view.toolbar
 
-import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,7 +18,7 @@ import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.ui.theme.Spacing
 
 @Composable
-fun ToolbarControls(
+internal fun ToolbarControls(
     currentOrientation: ToolbarOrientation,
     onChangeOrientation: (ToolbarOrientation) -> Unit,
     autoClearCanvas: Boolean,
@@ -128,7 +127,7 @@ internal fun AboutScreen() {
 }
 
 @Composable
-fun CheckboxControl(
+internal fun CheckboxControl(
     label: String,
     isChecked: Boolean,
     onCheckedChange: (Boolean) -> Unit,

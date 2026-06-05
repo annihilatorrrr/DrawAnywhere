@@ -2,27 +2,22 @@ package com.shezik.drawanywhere.drawing
 
 import androidx.compose.ui.geometry.Offset
 import com.shezik.drawanywhere.model.DrawAction
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 
-class RectangleTool(private val ctx: ToolContext) : StrokeTool {
+/**
+ * Rectangle / Ellipse — creates a 2-point stroke, replaces second point on move,
+ * normalizes on finish.
+ */
+class ShapeTool(private val ctx: ToolContext) : StrokeTool {
 
     override fun onStart(point: Offset) {
-        val stroke = DrawObject.Stroke(
+        ctx.strokes.add(Stroke(
             _points = mutableListOf(point, point),
             color = ctx.penConfig.color,
             width = ctx.penConfig.width,
             alpha = ctx.penConfig.alpha,
             penType = ctx.penConfig.penType,
-        )
-        stroke.onRender = { s, canvas, paint ->
-            val p0 = s.points[0]; val p1 = s.points[1]
-            canvas.drawRect(
-                minOf(p0.x, p1.x), minOf(p0.y, p1.y),
-                maxOf(p0.x, p1.x), maxOf(p0.y, p1.y),
-                paint,
-            )
-        }
-        ctx.strokes.add(stroke)
+        ))
     }
 
     override fun onMove(point: Offset) {

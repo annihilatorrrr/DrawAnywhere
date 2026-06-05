@@ -2,7 +2,7 @@ package com.shezik.drawanywhere
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import kotlinx.coroutines.flow.first
@@ -14,7 +14,7 @@ class DrawControllerTest {
 
     private fun newController() = DrawController(PenConfig())
 
-    private fun newStroke() = DrawObject.Stroke(
+    private fun newStroke() = Stroke(
         _points = mutableListOf(Offset(0f, 0f)),
         color = Color.Red,
         width = 5f,

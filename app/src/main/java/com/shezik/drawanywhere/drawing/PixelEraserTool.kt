@@ -2,7 +2,7 @@ package com.shezik.drawanywhere.drawing
 
 import androidx.compose.ui.geometry.Offset
 import com.shezik.drawanywhere.model.DrawAction
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 import com.shezik.drawanywhere.model.PenType
 
 /**
@@ -12,7 +12,7 @@ import com.shezik.drawanywhere.model.PenType
  */
 class PixelEraserTool(private val ctx: ToolContext) : StrokeTool {
 
-    private var snapshot: List<DrawObject.Stroke>? = null
+    private var snapshot: List<Stroke>? = null
 
     override fun onStart(point: Offset) {
         snapshot = null
@@ -83,20 +83,20 @@ class PixelEraserTool(private val ctx: ToolContext) : StrokeTool {
 
             strokes.removeAt(i)
             for (segPts in segments.reversed()) {
-                strokes.add(i, DrawObject.Stroke(
+                strokes.add(i, Stroke(
                     _points = segPts,
                     color = stroke.color,
                     width = stroke.width,
                     alpha = stroke.alpha,
                     penType = stroke.penType,
-                ).also { it.onRender = stroke.onRender })
+                ))
             }
             i--
         }
         ctx.notifyChanged()
     }
 
-    private fun bboxHits(stroke: DrawObject.Stroke, pt: Offset, radius: Float): Boolean {
+    private fun bboxHits(stroke: Stroke, pt: Offset, radius: Float): Boolean {
         val pts = stroke.points
         if (pts.isEmpty()) return false
         var minX = pts[0].x; var maxX = pts[0].x

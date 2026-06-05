@@ -24,7 +24,7 @@ import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import com.shezik.drawanywhere.model.StrokeModifier
 import com.shezik.drawanywhere.view.canvas.CanvasViewport
-import com.shezik.drawanywhere.model.ToolbarOrientation
+import com.shezik.drawanywhere.view.toolbar.ToolbarOrientation
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

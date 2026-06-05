@@ -21,7 +21,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
-import com.shezik.drawanywhere.model.ToolbarOrientation
+import com.shezik.drawanywhere.view.toolbar.ToolbarOrientation
 import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -52,7 +52,7 @@ class PreferencesManager(private val context: Context) {
         fun penAlphaKey(penType: PenType) = floatPreferencesKey("${penType.name}_alpha")
     }
 
-    inline fun <reified T : Enum<T>> getEnumValueOrDefault(
+    private inline fun <reified T : Enum<T>> getEnumValueOrDefault(
         value: String?,
         defaultValue: T
     ): T {

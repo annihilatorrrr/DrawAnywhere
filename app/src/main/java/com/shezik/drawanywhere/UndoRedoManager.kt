@@ -16,7 +16,7 @@ class UndoRedoManager(private val maxDepth: Int = 50) {
     private val _canRedo = MutableStateFlow(false)
     val canRedo: StateFlow<Boolean> = _canRedo.asStateFlow()
 
-    fun push(action: DrawAction, clearRedo: Boolean = true) {
+    internal fun push(action: DrawAction, clearRedo: Boolean = true) {
         if (clearRedo) redoStack.clear()
         undoStack.add(action)
         if (undoStack.size > maxDepth) {
@@ -25,19 +25,19 @@ class UndoRedoManager(private val maxDepth: Int = 50) {
         updateUndoRedoState()
     }
 
-    fun popUndo(): DrawAction? {
+    internal fun popUndo(): DrawAction? {
         if (undoStack.isEmpty()) return null
         val action = undoStack.removeAt(undoStack.lastIndex)
         updateUndoRedoState()
         return action
     }
 
-    fun pushRedo(action: DrawAction) {
+    internal fun pushRedo(action: DrawAction) {
         redoStack.add(action)
         updateUndoRedoState()
     }
 
-    fun popRedo(): DrawAction? {
+    internal fun popRedo(): DrawAction? {
         if (redoStack.isEmpty()) return null
         val action = redoStack.removeAt(redoStack.lastIndex)
         updateUndoRedoState()

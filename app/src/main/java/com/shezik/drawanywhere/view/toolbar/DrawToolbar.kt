@@ -1,6 +1,5 @@
 package com.shezik.drawanywhere.view.toolbar
 
-import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -96,7 +95,7 @@ fun DrawToolbar(
 }
 
 @Composable
-fun ToolbarButtonsContainer(
+internal fun ToolbarButtonsContainer(
     modifier: Modifier = Modifier,
     uiState: com.shezik.drawanywhere.UiState,
     allButtonsMap: Map<String, ToolbarButton>,

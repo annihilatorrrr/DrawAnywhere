@@ -3,7 +3,7 @@ package com.shezik.drawanywhere.drawing
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.shezik.drawanywhere.model.DrawAction
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import org.junit.Assert.*
@@ -12,7 +12,7 @@ import org.junit.Test
 class PixelEraserToolTest {
 
     private fun toolContext(
-        strokes: MutableList<DrawObject.Stroke> = mutableListOf(),
+        strokes: MutableList<Stroke> = mutableListOf(),
         penConfig: PenConfig = PenConfig(penType = PenType.PixelEraser, width = 20f, color = Color.LightGray),
         undoActions: MutableList<DrawAction> = mutableListOf(),
     ): ToolContext = ToolContext(
@@ -22,8 +22,8 @@ class PixelEraserToolTest {
         onChanged = {},
     )
 
-    private fun penStroke(points: List<Offset>): DrawObject.Stroke =
-        DrawObject.Stroke(
+    private fun penStroke(points: List<Offset>): Stroke =
+        Stroke(
             _points = points.toMutableList(),
             color = Color.Red,
             width = 4f,
@@ -115,7 +115,7 @@ class PixelEraserToolTest {
 
     @Test
     fun nonPenStrokesIgnored() {
-        val rectStroke = DrawObject.Stroke(
+        val rectStroke = Stroke(
             _points = mutableListOf(Offset(0f, 0f), Offset(50f, 50f)),
             color = Color.Red, width = 4f, alpha = 1f, penType = PenType.Rectangle,
         )

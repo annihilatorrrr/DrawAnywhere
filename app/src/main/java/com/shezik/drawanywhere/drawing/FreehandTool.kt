@@ -2,24 +2,22 @@ package com.shezik.drawanywhere.drawing
 
 import androidx.compose.ui.geometry.Offset
 import com.shezik.drawanywhere.model.DrawAction
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 
 /**
- * Freehand pen — creates a single [DrawObject.Stroke] and appends points on move.
- * The render lambda draws a smooth quadratic-bezier path through the points.
+ * Freehand pen / laser — appends points on move.
+ * Rendering and hit-testing are delegated to [com.shezik.drawanywhere.model.PenType].
  */
-class PenTool(private val ctx: ToolContext) : StrokeTool {
+class FreehandTool(private val ctx: ToolContext) : StrokeTool {
 
     override fun onStart(point: Offset) {
-        val stroke = DrawObject.Stroke(
+        ctx.strokes.add(Stroke(
             _points = mutableListOf(point),
             color = ctx.penConfig.color,
             width = ctx.penConfig.width,
             alpha = ctx.penConfig.alpha,
             penType = ctx.penConfig.penType,
-        )
-        stroke.onRender = { s, canvas, paint -> canvas.drawPath(s.buildPath(), paint) }
-        ctx.strokes.add(stroke)
+        ))
     }
 
     override fun onMove(point: Offset) {

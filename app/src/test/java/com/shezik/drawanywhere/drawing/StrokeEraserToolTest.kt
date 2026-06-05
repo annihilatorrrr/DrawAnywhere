@@ -3,7 +3,7 @@ package com.shezik.drawanywhere.drawing
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import com.shezik.drawanywhere.model.DrawAction
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import org.junit.Assert.*
@@ -12,7 +12,7 @@ import org.junit.Test
 class StrokeEraserToolTest {
 
     private fun toolContext(
-        strokes: MutableList<DrawObject.Stroke> = mutableListOf(),
+        strokes: MutableList<Stroke> = mutableListOf(),
         penConfig: PenConfig = PenConfig(penType = PenType.StrokeEraser, width = 20f, color = Color.LightGray),
         undoActions: MutableList<DrawAction> = mutableListOf(),
     ): ToolContext = ToolContext(
@@ -22,8 +22,8 @@ class StrokeEraserToolTest {
         onChanged = {},
     )
 
-    private fun penStroke(points: List<Offset>): DrawObject.Stroke =
-        DrawObject.Stroke(
+    private fun penStroke(points: List<Offset>): Stroke =
+        Stroke(
             _points = points.toMutableList(),
             color = Color.Red, width = 4f, alpha = 1f, penType = PenType.Pen,
         )
@@ -131,7 +131,7 @@ class StrokeEraserToolTest {
 
     @Test
     fun rectangleEdgeHit_removesShape() {
-        val rect = DrawObject.Stroke(
+        val rect = Stroke(
             _points = mutableListOf(Offset(10f, 10f), Offset(100f, 100f)),
             color = Color.Red, width = 4f, alpha = 1f, penType = PenType.Rectangle,
         )
@@ -147,7 +147,7 @@ class StrokeEraserToolTest {
 
     @Test
     fun rectangleInteriorMiss_survives() {
-        val rect = DrawObject.Stroke(
+        val rect = Stroke(
             _points = mutableListOf(Offset(10f, 10f), Offset(100f, 100f)),
             color = Color.Red, width = 4f, alpha = 1f, penType = PenType.Rectangle,
         )
@@ -165,7 +165,7 @@ class StrokeEraserToolTest {
 
     @Test
     fun ellipseEdgeHit_worksLikeRectangle() {
-        val ellipse = DrawObject.Stroke(
+        val ellipse = Stroke(
             _points = mutableListOf(Offset(10f, 10f), Offset(100f, 100f)),
             color = Color.Red, width = 4f, alpha = 1f, penType = PenType.Ellipse,
         )

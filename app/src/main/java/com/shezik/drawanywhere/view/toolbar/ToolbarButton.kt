@@ -1,6 +1,5 @@
 package com.shezik.drawanywhere.view.toolbar
 
-import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
@@ -14,7 +13,7 @@ import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.UiState
 import com.shezik.drawanywhere.model.PenType
 
-data class ToolbarButton(
+internal data class ToolbarButton(
     val id: String,
     val icon: ImageVector,
     val color: Color? = null,
@@ -28,7 +27,7 @@ data class ToolbarButton(
 }
 
 @Composable
-fun createAllToolbarButtons(
+internal fun createAllToolbarButtons(
     uiState: UiState,
     canUndo: Boolean,
     canRedo: Boolean,

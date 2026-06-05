@@ -1,6 +1,5 @@
 package com.shezik.drawanywhere.view.toolbar
 
-import com.shezik.drawanywhere.model.ToolbarOrientation
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -26,7 +25,7 @@ import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.ui.theme.Spacing
 
 @Composable
-fun RenderButton(button: ToolbarButton, popupAlignment: Alignment, modifier: Modifier = Modifier) {
+internal fun RenderButton(button: ToolbarButton, popupAlignment: Alignment, modifier: Modifier = Modifier) {
     if (button.hasPopup) {
         PopupToolbarButton(modifier = modifier, button = button, popupAlignment = popupAlignment)
     } else {
@@ -35,7 +34,7 @@ fun RenderButton(button: ToolbarButton, popupAlignment: Alignment, modifier: Mod
 }
 
 @Composable
-fun ToolbarExpandButton(
+internal fun ToolbarExpandButton(
     modifier: Modifier,
     isExpanded: Boolean,
     onClick: () -> Unit,
@@ -70,7 +69,7 @@ fun ToolbarExpandButton(
 }
 
 @Composable
-fun AnimatedToolbarButton(modifier: Modifier, button: ToolbarButton) {
+internal fun AnimatedToolbarButton(modifier: Modifier, button: ToolbarButton) {
     val iconColor = button.color ?: MaterialTheme.colorScheme.onSurface
     val scale by animateFloatAsState(
         targetValue = if (button.isEnabled) 1f else 0.9f,
@@ -94,7 +93,7 @@ fun AnimatedToolbarButton(modifier: Modifier, button: ToolbarButton) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PopupToolbarButton(
+internal fun PopupToolbarButton(
     modifier: Modifier,
     button: ToolbarButton,
     popupAlignment: Alignment

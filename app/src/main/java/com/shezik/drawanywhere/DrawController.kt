@@ -20,7 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import com.shezik.drawanywhere.drawing.StrokeTool
 import com.shezik.drawanywhere.drawing.ToolContext
 import com.shezik.drawanywhere.model.DrawAction
-import com.shezik.drawanywhere.model.DrawObject
+import com.shezik.drawanywhere.model.Stroke
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.model.PenType
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,8 +41,8 @@ class DrawController(initialConfig: PenConfig) {
 
     var onStrokesChanged: (() -> Unit)? = null
 
-    private val _strokeList = mutableListOf<DrawObject.Stroke>()
-    val strokeList: List<DrawObject.Stroke>
+    private val _strokeList = mutableListOf<Stroke>()
+    val strokeList: List<Stroke>
         get() = _strokeList
 
     private val undoRedo = UndoRedoManager()

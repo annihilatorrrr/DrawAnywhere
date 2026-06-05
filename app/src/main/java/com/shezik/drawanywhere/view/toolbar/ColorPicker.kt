@@ -212,9 +212,9 @@ private fun HsvPage(selectedColor: Color, onColorSelected: (Color) -> Unit) {
             },
         )
 
-        HslSlider("H", h, 0f..360f, { h = it }, { "${it.toInt()}°" })
-        HslSlider("S", s, 0f..1f, { s = it }, { "${(it * 100).toInt()}%" }, modifier = Modifier.padding(top = Spacing.sm))
-        HslSlider("V", v, 0f..1f, { v = it }, { "${(it * 100).toInt()}%" }, modifier = Modifier.padding(top = Spacing.sm))
+        HsvSlider("H", h, 0f..360f, { h = it }, { "${it.toInt()}°" })
+        HsvSlider("S", s, 0f..1f, { s = it }, { "${(it * 100).toInt()}%" }, modifier = Modifier.padding(top = Spacing.sm))
+        HsvSlider("V", v, 0f..1f, { v = it }, { "${(it * 100).toInt()}%" }, modifier = Modifier.padding(top = Spacing.sm))
 
         val contrastColor = Color(1f - previewColor.red, 1f - previewColor.green, 1f - previewColor.blue)
 
@@ -241,7 +241,7 @@ private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun HslSlider(
+private fun HsvSlider(
     label: String, value: Float, valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit, valueDisplay: (Float) -> String,
     modifier: Modifier = Modifier,

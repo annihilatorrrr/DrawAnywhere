@@ -22,7 +22,7 @@ data class Stroke(
         val argb = color.toArgb()
         val combinedAlpha = (color.alpha * alpha * 255).toInt().coerceIn(0, 255)
         paint.color = (argb and 0x00FFFFFF) or (combinedAlpha shl 24)
-        penType.renderer.render(this, canvas, paint, createdAt)
+        penType.renderer.render(this, canvas, paint, System.currentTimeMillis())
     }
 }
 
@@ -31,4 +31,21 @@ sealed class DrawAction {
     data class EraseStroke(val stroke: Stroke) : DrawAction()
     data class ClearStrokes(val strokes: List<Stroke>) : DrawAction()
     data class CanvasSnapshot(val before: List<Stroke>, val after: List<Stroke>) : DrawAction()
+
+    /** Returns this action with ephemeral strokes removed, or null if nothing remains. */
+    fun withoutEphemeral(): DrawAction? = when (this) {
+        is AddStroke -> if (stroke.penType.isEphemeral) null else this
+        is EraseStroke -> if (stroke.penType.isEphemeral) null else this
+        is ClearStrokes -> {
+            val f = strokes.filter { !it.penType.isEphemeral }
+            if (f.isEmpty()) null else copy(strokes = f)
+        }
+        is CanvasSnapshot -> {
+            val b = before.filter { !it.penType.isEphemeral }
+            val a = after.filter { !it.penType.isEphemeral }
+            if (b.isEmpty() && a.isEmpty()) null
+            else if (b == before && a == after) this
+            else copy(before = b, after = a)
+        }
+    }
 }

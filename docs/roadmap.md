@@ -8,12 +8,16 @@
 - [x] 手指绘制开关
 - [x] 缩放锁定 + HUD
 - [x] `TapGestureDetector` 独立
-- [x] `drawing/` 包：`StrokeTool` 接口 + 四种工具
+- [x] `drawing/` 包：`StrokeTool` 接口 + `FreehandTool` / `ShapeTool`
 - [x] 像素橡皮（`CanvasSnapshot` undo/redo）
-- [x] `PenType` 加入 `labelResId` / `isEraser`
+- [x] `PenType` 加入 `labelResId` / `isEraser` / `icon`
 - [x] 取色器（HSV 色轮 / 预设色板 / 最近颜色 / Hex 输入）
 - [x] 橡皮擦禁用调色板 + Alpha 滑块（disabled 而非隐藏）
-- [x] `Spacing` 设计常亮统一 dp 魔数
+- [x] `Spacing` 设计常量统一 dp 魔数
+- [x] 激光笔（TTL 3s + 淡出 + glow 效果）
+- [x] 能力对象 `Renderer` / `HitTester`（`Capabilities.kt`）
+- [x] `DrawAction.withoutEphemeral()` — 统一过滤临时笔画
+- [x] 97 单元测试
 
 ## 待做
 
@@ -21,7 +25,7 @@
 - [ ] 关闭手指绘制时自动透传触摸（笔未 hover 时）
 - [ ] 次工具条（垂直方向）
 - [ ] 笔按键环形菜单（中央橡皮 + 外圈功能扇区）
-- [ ] 像素橡皮擦形状（边缘细分 / 插值）
+- [ ] 像素橡皮支持 Rectangle / Ellipse（边缘轮廓采样）
 - [ ] Palm rejection
 
 ### 第二批
@@ -31,7 +35,6 @@
 ### 待修
 - [ ] 覆盖层窗口大小适配（取色器、设置等 popup 受 WRAP_CONTENT 限制）
 - [ ] `ToolbarLifecycleOwner` 补齐 ON_START / ON_RESUME 生命周期回调
-- [ ] `InkEraser24Px` SVG 冗余路径命令清理
 
 ---
 

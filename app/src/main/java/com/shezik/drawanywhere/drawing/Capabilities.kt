@@ -59,13 +59,31 @@ object OvalRenderer : Renderer {
 }
 
 object LaserRenderer : Renderer {
+    /** Fraction of TTL before fade begins. */
+    private const val FADE_START = 0.7f
+    /** Glow width multiplier relative to stroke width. */
+    private const val GLOW_WIDTH = 2.5f
+    /** Glow alpha as fraction of the stroke's own alpha. */
+    private const val GLOW_ALPHA = 0.4f
+
     override fun render(stroke: Stroke, canvas: Canvas, paint: Paint, now: Long) {
-        if (now - stroke.createdAt > stroke.penType.ttlMs) return
-        paint.strokeWidth = stroke.width * 2
-        paint.alpha = 40
+        val elapsed = now - stroke.createdAt
+        val ttl = stroke.penType.ttlMs
+        if (elapsed > ttl) return
+
+        val fade = if (elapsed < ttl * FADE_START) 1f
+            else ((ttl - elapsed) / (ttl * (1f - FADE_START))).coerceIn(0f, 1f)
+
+        val baseAlpha = paint.alpha.toFloat()
+
+        // Glow: wider and dimmer, derived from the stroke's own color/alpha
+        paint.strokeWidth = stroke.width * GLOW_WIDTH
+        paint.alpha = (baseAlpha * GLOW_ALPHA * fade).toInt().coerceIn(0, 255)
         canvas.drawPath(PenRenderer.buildPath(stroke.points), paint)
+
+        // Core: normal width, stroke's full alpha
         paint.strokeWidth = stroke.width
-        paint.alpha = 200
+        paint.alpha = (baseAlpha * fade).toInt().coerceIn(0, 255)
         canvas.drawPath(PenRenderer.buildPath(stroke.points), paint)
     }
 }

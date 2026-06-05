@@ -2,6 +2,12 @@
 
 ## 像素橡皮
 
-- **只擦 Pen stroke**，Rectangle / Ellipse 不受影响
+- **只擦 Pen stroke**，Rectangle / Ellipse / Laser 不受影响
 - 基于点到圆距离碰撞，精度取决于笔迹点密度——稀疏笔迹残留碎片
 - 形状要支持需边缘细分；Pen 笔迹要提升精度可在擦除路径上插值采样点
+
+## 激光笔
+
+- 像素橡皮无法擦除激光笔迹（与矩形/椭圆同理，非 Pen 类型）
+- 过期清理依赖 `onDraw` 触发——无绘制更新时不会主动回收
+- 后 30% TTL 淡出效果依赖 `postInvalidateDelayed(100)` 持续刷新，停止交互 3s 后自动消失

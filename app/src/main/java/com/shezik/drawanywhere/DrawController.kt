@@ -22,7 +22,6 @@ import com.shezik.drawanywhere.drawing.ToolContext
 import com.shezik.drawanywhere.model.DrawAction
 import com.shezik.drawanywhere.model.Stroke
 import com.shezik.drawanywhere.model.PenConfig
-import com.shezik.drawanywhere.model.PenType
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -86,6 +85,12 @@ class DrawController(initialConfig: PenConfig) {
         undoRedo.push(DrawAction.ClearStrokes(_strokeList.toList()))
         _strokeList.clear()
         notifyChanged()
+    }
+
+    fun removeExpiredStrokes(now: Long) {
+        val before = _strokeList.size
+        _strokeList.removeAll { stroke -> stroke.penType.isEphemeral && now - stroke.createdAt > stroke.penType.ttlMs }
+        if (_strokeList.size != before) notifyChanged()
     }
 
     fun undo() {

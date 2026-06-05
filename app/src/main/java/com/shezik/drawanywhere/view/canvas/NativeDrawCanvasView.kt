@@ -97,6 +97,8 @@ class NativeDrawCanvasView(
 
         val vp = viewModel.viewport.value
 
+        drawController.removeExpiredStrokes(System.currentTimeMillis())
+
         canvas.save()
         canvas.translate(-vp.panX * vp.zoom, -vp.panY * vp.zoom)
         canvas.scale(vp.zoom, vp.zoom)
@@ -120,6 +122,11 @@ class NativeDrawCanvasView(
         val lockIcon = if (vp.zoomLocked) " 🔒" else ""
         if (label.isNotEmpty() || vp.zoomLocked) {
             canvas.drawText("$label$lockIcon", 24f, height - 48f, hudPaint)
+        }
+
+        // Keep refreshing while ephemeral strokes are fading
+        if (drawController.strokeList.any { it.penType.isEphemeral }) {
+            postInvalidateDelayed(100)
         }
     }
 

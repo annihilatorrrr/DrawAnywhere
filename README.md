@@ -36,7 +36,7 @@ This app is in its early stage, feel free to open an issue if you encounter prob
 ## 💌 Shoutouts
 to [Akshay Sharma](https://github.com/akshay2211)'s [DrawBox](https://github.com/akshay2211/DrawBox) for inspirations,<br>
 [480 Design](https://www.figma.com/@480design) and [R4IN80W](https://www.figma.com/@voidrainbow)'s [Solar Icons Set](https://www.figma.com/community/file/1166831539721848736/solar-icons-set) for the astounding app icon ([CC BY 4.0](SVG%20Icon/LICENSE.md)),<br>
-and [Mauro Banze](https://stackoverflow.com/a/66958772) & [Yannick](https://stackoverflow.com/a/65760080) for their Stack Overflow answers ([CC BY-SA 4.0](app/src/main/java/com/shezik/drawanywhere/CustomLifecycleOwner.kt#L3))!
+and [Mauro Banze](https://stackoverflow.com/a/66958772) & [Yannick](https://stackoverflow.com/a/65760080) for their Stack Overflow answers ([CC BY-SA 4.0](app/src/main/java/com/shezik/drawanywhere/ToolbarLifecycleOwner.kt))!
 
 Finally, thank [you](https://play.google.com/store/apps/details?id=com.kts.draw) for making your app subscription-based! You are my original motivation![^1]<br>
 <sub>i'll stop before starting to sound like yes man</sub>

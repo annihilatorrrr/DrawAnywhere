@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -11,6 +12,7 @@ import com.shezik.drawanywhere.R
 import com.shezik.drawanywhere.drawing.EdgeHitTester
 import com.shezik.drawanywhere.drawing.FreehandTool
 import com.shezik.drawanywhere.drawing.HitTester
+import com.shezik.drawanywhere.drawing.LaserRenderer
 import com.shezik.drawanywhere.drawing.OvalRenderer
 import com.shezik.drawanywhere.drawing.PenRenderer
 import com.shezik.drawanywhere.drawing.PixelEraserTool
@@ -32,13 +34,16 @@ enum class PenType(
     val isEraser: Boolean = false,
 ) {
     Pen(R.string.pen, Icons.Default.Edit, PenRenderer, SegmentHitTester),
+    Laser(R.string.laser, Icons.Default.FlashOn, LaserRenderer, SegmentHitTester, ttlMs = 3_000L),
     Rectangle(R.string.rectangle, Icons.Default.CropSquare, RectRenderer, EdgeHitTester),
     Ellipse(R.string.ellipse, Icons.Default.RadioButtonUnchecked, OvalRenderer, EdgeHitTester),
     StrokeEraser(R.string.stroke_eraser, InkEraser24Px, PenRenderer, SegmentHitTester, isEraser = true),
     PixelEraser(R.string.pixel_eraser, Icons.Default.BlurOn, PenRenderer, SegmentHitTester, isEraser = true);
 
+    val isEphemeral: Boolean get() = ttlMs < Long.MAX_VALUE
+
     fun createTool(ctx: ToolContext): StrokeTool = when (this) {
-        Pen -> FreehandTool(ctx)
+        Pen, Laser -> FreehandTool(ctx)
         Rectangle, Ellipse -> ShapeTool(ctx)
         StrokeEraser -> StrokeEraserTool(ctx)
         PixelEraser -> PixelEraserTool(ctx)

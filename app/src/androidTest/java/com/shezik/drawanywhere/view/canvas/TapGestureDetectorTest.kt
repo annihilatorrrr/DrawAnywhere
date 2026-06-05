@@ -1,6 +1,5 @@
 package com.shezik.drawanywhere.view.canvas
 
-import android.os.Looper
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.*

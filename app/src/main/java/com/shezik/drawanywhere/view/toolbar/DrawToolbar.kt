@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.shezik.drawanywhere.DrawViewModel
-import com.shezik.drawanywhere.scrollFadingEdges
+import com.shezik.drawanywhere.util.scrollFadingEdges
 import com.shezik.drawanywhere.ui.theme.DrawAnywhereTheme
 import com.shezik.drawanywhere.ui.theme.Spacing
 

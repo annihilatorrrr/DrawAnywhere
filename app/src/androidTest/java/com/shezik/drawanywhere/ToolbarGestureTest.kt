@@ -3,7 +3,6 @@ package com.shezik.drawanywhere
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.geometry.Offset
 import androidx.test.platform.app.InstrumentationRegistry
 import com.shezik.drawanywhere.model.PenConfig
 import com.shezik.drawanywhere.view.toolbar.DrawToolbar

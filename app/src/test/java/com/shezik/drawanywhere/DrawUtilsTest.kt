@@ -1,6 +1,10 @@
 package com.shezik.drawanywhere
 
 import androidx.compose.ui.geometry.Offset
+import com.shezik.drawanywhere.util.distance
+import com.shezik.drawanywhere.util.distancePointToLineSegment
+import com.shezik.drawanywhere.util.distanceSquared
+import com.shezik.drawanywhere.util.hitTestRectEdge
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -67,22 +71,28 @@ class DrawUtilsTest {
 
     @Test
     fun hitTestRectEdge_topEdgeHit() {
-        assertTrue(hitTestRectEdge(
-            Offset(50f, 10f), 10f, 10f, 100f, 100f, threshold = 10f
-        ))
+        assertTrue(
+            hitTestRectEdge(
+                Offset(50f, 10f), 10f, 10f, 100f, 100f, threshold = 10f
+            )
+        )
     }
 
     @Test
     fun hitTestRectEdge_missesInterior() {
-        assertFalse(hitTestRectEdge(
-            Offset(55f, 55f), 10f, 10f, 100f, 100f, threshold = 5f
-        ))
+        assertFalse(
+            hitTestRectEdge(
+                Offset(55f, 55f), 10f, 10f, 100f, 100f, threshold = 5f
+            )
+        )
     }
 
     @Test
     fun hitTestRectEdge_missesFarAway() {
-        assertFalse(hitTestRectEdge(
-            Offset(200f, 200f), 10f, 10f, 100f, 100f, threshold = 10f
-        ))
+        assertFalse(
+            hitTestRectEdge(
+                Offset(200f, 200f), 10f, 10f, 100f, 100f, threshold = 10f
+            )
+        )
     }
 }

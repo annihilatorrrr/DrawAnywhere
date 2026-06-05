@@ -5,9 +5,9 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import androidx.compose.ui.geometry.Offset
-import com.shezik.drawanywhere.distance
-import com.shezik.drawanywhere.distancePointToLineSegment
-import com.shezik.drawanywhere.hitTestRectEdge
+import com.shezik.drawanywhere.util.distance
+import com.shezik.drawanywhere.util.distancePointToLineSegment
+import com.shezik.drawanywhere.util.hitTestRectEdge
 import com.shezik.drawanywhere.model.Stroke
 
 /** Renders a stroke onto [canvas] using [paint]. */

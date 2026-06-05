@@ -89,7 +89,7 @@ class PixelEraserTool(private val ctx: ToolContext) : StrokeTool {
                     width = stroke.width,
                     alpha = stroke.alpha,
                     penType = stroke.penType,
-                ))
+                ).also { it.onRender = stroke.onRender })
             }
             i--
         }

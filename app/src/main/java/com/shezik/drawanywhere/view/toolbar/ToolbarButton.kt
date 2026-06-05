@@ -74,13 +74,7 @@ fun createAllToolbarButtons(
     ),
     ToolbarButton(
         id = "tool_controls",
-        icon = when (uiState.currentPenType) {
-            PenType.Pen -> Icons.Default.Edit
-            PenType.Rectangle -> Icons.Default.CropSquare
-            PenType.Ellipse -> Icons.Default.RadioButtonUnchecked
-            PenType.StrokeEraser -> InkEraser24Px
-            PenType.PixelEraser -> Icons.Default.BlurOn
-        },
+        icon = uiState.currentPenType.icon,
         contentDescription = stringResource(R.string.tool_controls),
         popupPages = listOf(
             { PenTypeSelector(currentPenType = uiState.currentPenType, onPenTypeSwitch = onPenTypeSwitch) },

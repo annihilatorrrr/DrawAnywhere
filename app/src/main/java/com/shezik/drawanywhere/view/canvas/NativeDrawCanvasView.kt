@@ -19,15 +19,12 @@ package com.shezik.drawanywhere.view.canvas
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Path
 import android.view.MotionEvent
 import android.view.View
-import android.graphics.RectF
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.toArgb
 import com.shezik.drawanywhere.DrawController
 import com.shezik.drawanywhere.DrawViewModel
-import com.shezik.drawanywhere.model.PenType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -105,31 +102,7 @@ class NativeDrawCanvasView(
         canvas.scale(vp.zoom, vp.zoom)
 
         for (stroke in drawController.strokeList) {
-            if (stroke.points.isEmpty()) continue
-
-            pathPaint.strokeWidth = stroke.width
-            val colorArgb = stroke.color.toArgb()
-            val colorAlpha = stroke.color.alpha
-            val combinedAlpha = (colorAlpha * stroke.alpha * 255).toInt().coerceIn(0, 255)
-            pathPaint.color = (colorArgb and 0x00FFFFFF) or (combinedAlpha shl 24)
-
-            when (stroke.penType) {
-                PenType.Rectangle, PenType.Ellipse -> {
-                    if (stroke.points.size < 2) continue
-                    val p0 = stroke.points[0]; val p1 = stroke.points[1]
-                    val left = minOf(p0.x, p1.x); val top = minOf(p0.y, p1.y)
-                    val right = maxOf(p0.x, p1.x); val bottom = maxOf(p0.y, p1.y)
-                    if (stroke.penType == PenType.Rectangle) {
-                        canvas.drawRect(left, top, right, bottom, pathPaint)
-                    } else {
-                        canvas.drawOval(RectF(left, top, right, bottom), pathPaint)
-                    }
-                }
-                else -> {
-                    val androidPath = buildAndroidPath(stroke.points)
-                    canvas.drawPath(androidPath, pathPaint)
-                }
-            }
+            stroke.render(canvas, pathPaint)
         }
         canvas.restore()
 
@@ -166,23 +139,4 @@ class NativeDrawCanvasView(
         viewportScope?.cancel()
     }
 
-    // ── Path builder ─────────────────────────────────────────────
-
-    private fun buildAndroidPath(
-        points: List<Offset>
-    ): Path {
-        val p = Path()
-        if (points.isEmpty()) return p
-        val first = points.first()
-        p.moveTo(first.x, first.y)
-        points.zipWithNext().forEachIndexed { index, (start, end) ->
-            val mx = (start.x + end.x) / 2f
-            val my = (start.y + end.y) / 2f
-            if (index == 0) p.lineTo(mx, my)
-            else p.quadTo(start.x, start.y, mx, my)
-        }
-        val last = points.last()
-        p.lineTo(last.x, last.y)
-        return p
-    }
 }

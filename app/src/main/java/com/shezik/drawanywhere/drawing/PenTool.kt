@@ -6,17 +6,20 @@ import com.shezik.drawanywhere.model.DrawObject
 
 /**
  * Freehand pen — creates a single [DrawObject.Stroke] and appends points on move.
+ * The render lambda draws a smooth quadratic-bezier path through the points.
  */
 class PenTool(private val ctx: ToolContext) : StrokeTool {
 
     override fun onStart(point: Offset) {
-        ctx.strokes.add(DrawObject.Stroke(
+        val stroke = DrawObject.Stroke(
             _points = mutableListOf(point),
             color = ctx.penConfig.color,
             width = ctx.penConfig.width,
             alpha = ctx.penConfig.alpha,
             penType = ctx.penConfig.penType,
-        ))
+        )
+        stroke.onRender = { s, canvas, paint -> canvas.drawPath(s.buildPath(), paint) }
+        ctx.strokes.add(stroke)
     }
 
     override fun onMove(point: Offset) {

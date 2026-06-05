@@ -30,7 +30,7 @@ enum class PenType(
     val icon: ImageVector,
     val renderer: Renderer,
     val hitTester: HitTester,
-    val ttlMs: Long = Long.MAX_VALUE,
+    val ttlMs: Long? = null,
     val isEraser: Boolean = false,
 ) {
     Pen(R.string.pen, Icons.Default.Edit, PenRenderer, SegmentHitTester),
@@ -40,7 +40,7 @@ enum class PenType(
     StrokeEraser(R.string.stroke_eraser, InkEraser24Px, PenRenderer, SegmentHitTester, isEraser = true),
     PixelEraser(R.string.pixel_eraser, Icons.Default.BlurOn, PenRenderer, SegmentHitTester, isEraser = true);
 
-    val isEphemeral: Boolean get() = ttlMs < Long.MAX_VALUE
+    val isEphemeral: Boolean get() = ttlMs != null
 
     fun createTool(ctx: ToolContext): StrokeTool = when (this) {
         Pen, Laser -> FreehandTool(ctx)

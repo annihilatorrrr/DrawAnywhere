@@ -88,9 +88,12 @@ class DrawController(initialConfig: PenConfig) {
     }
 
     fun removeExpiredStrokes(now: Long) {
-        val before = _strokeList.size
-        _strokeList.removeAll { stroke -> stroke.penType.isEphemeral && now - stroke.createdAt > stroke.penType.ttlMs }
-        if (_strokeList.size != before) notifyChanged()
+        if (
+            _strokeList.removeAll { stroke ->
+                val ttl = stroke.penType.ttlMs ?: return@removeAll false
+                now - stroke.createdAt > ttl
+            }
+        ) notifyChanged()
     }
 
     fun undo() {

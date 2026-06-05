@@ -24,7 +24,7 @@ class EphemeralStrokeTest {
         onChanged = {},
     )
 
-    private fun laserStroke(ttlMs: Long = 3_000L): Stroke = Stroke(
+    private fun laserStroke(): Stroke = Stroke(
         _points = mutableListOf(Offset(0f, 0f), Offset(50f, 0f)),
         color = Color.Red, width = 5f, alpha = 1f,
         penType = PenType.Laser,

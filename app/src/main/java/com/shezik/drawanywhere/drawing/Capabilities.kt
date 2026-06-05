@@ -67,11 +67,12 @@ object LaserRenderer : Renderer {
     private const val GLOW_ALPHA = 0.4f
 
     override fun render(stroke: Stroke, canvas: Canvas, paint: Paint, now: Long) {
-        val elapsed = now - stroke.createdAt
         val ttl = stroke.penType.ttlMs
-        if (elapsed > ttl) return
+        val elapsed = now - stroke.createdAt
 
-        val fade = if (elapsed < ttl * FADE_START) 1f
+        val fade = if (ttl == null) 1f
+            else if (elapsed > ttl) return
+            else if (elapsed < ttl * FADE_START) 1f
             else ((ttl - elapsed) / (ttl * (1f - FADE_START))).coerceIn(0f, 1f)
 
         val baseAlpha = paint.alpha.toFloat()
